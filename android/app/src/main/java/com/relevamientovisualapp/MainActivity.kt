@@ -1,4 +1,4 @@
-package com.relevamientovisualapp
+package com.allende.relevamiento
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

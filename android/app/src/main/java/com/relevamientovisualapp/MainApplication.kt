@@ -1,4 +1,4 @@
-package com.relevamientovisualapp
+package com.allende.relevamiento
 
 import android.app.Application
 import com.facebook.react.PackageList

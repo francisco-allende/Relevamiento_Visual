@@ -1,5 +1,7 @@
 import 'react-native-gesture-handler';
 import * as React from 'react';
+import { useEffect } from 'react';
+import UsersApi from './src/api/users';
 import { Button, Text, TextInput, View, Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -18,6 +20,19 @@ LogBox.ignoreLogs([]); // Ignora advertencias en la consola.
 const Stack = createStackNavigator();
 
 export default function App() {
+
+  const usersApi = UsersApi();
+
+  useEffect(() => {
+      const fetchItems = async () => {
+          const items = await usersApi.getItems();
+          console.log(items); // Aquí puedes hacer algo con los elementos obtenidos
+      };
+
+      fetchItems();
+  }, []);
+
+
   const [state, dispatch] = React.useReducer(
     (prevState, action) => {
       switch (action.type) {
