@@ -11,137 +11,87 @@ import {
     ScrollView,
     Keyboard,
     Platform,
-    Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEyeSlash, faLock, faPhoneAlt } from '@fortawesome/free-solid-svg-icons';
 import VersionInfo from 'react-native-version-info';
-import { AuthContext } from '../../utils/auth.context';
 import MySwitch from '../../components/MySwitch';
-import ForgotPasswordScreen from './forgot-password';
 import { AppColors, AppTxt, AppButton } from '../../assets/styles/default-styles';
+import { AuthContext } from '../../utils/auth.context';
+import useAuthenticationApi from '../../api/authentication';
+import showToast from '../../functions/showToast';
 
 const LoginScreen = ({ navigation }) => {
+
     const { signIn } = useContext(AuthContext);
-    const [username, setUsername] = useState(null);
-    const [password, setPassword] = useState(null);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [rememberLoginInfo, setRememberLoginInfo] = useState(false);
     const [autoLogin, setAutoLogin] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showPasswordValue, setShowPasswordValue] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [orientation, setOrientation] = useState('');
     const [keyboardShown, setKeyboardShown] = useState(false);
 
+    const { doLogin, registerUser } = useAuthenticationApi(email, password, setIsLoading, navigation);
+
+    //Manejo de teclado
     useEffect(() => {
-
-
-        AsyncStorage.getItem('LOGIN_INFO').then((result) => {
-            if (result !== null) {
-                const _loginInfo = JSON.parse(result);
-                setUsername(_loginInfo.username);
-                setPassword(_loginInfo.password);
-
-                if (_loginInfo.autoLogin) {
-                    doLogin();
-                }
-            }
-        });
-
-        getOrientation();
-
-        Dimensions.addEventListener('change', () => {
-            getOrientation();
-        });
-
-        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', _keyboardDidShow);
-        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', _keyboardDidHide);
+        const showSubscription = Keyboard.addListener('keyboardDidShow', _keyboardDidShow);
+        const hideSubscription = Keyboard.addListener('keyboardDidHide', _keyboardDidHide);
 
         return () => {
-            keyboardDidShowListener.remove();
-            keyboardDidHideListener.remove();
+            showSubscription.remove();
+            hideSubscription.remove();
         };
     }, []);
 
-    const doLogin = async () => {
-        setIsLoading(true);
+    const _keyboardDidShow = () => setKeyboardShown(true);
+    const _keyboardDidHide = () => setKeyboardShown(false);
 
-        const _loginInfo = {
-            username: rememberLoginInfo ? username : null,
-            password: autoLogin ? password : null,
-            rememberLoginInfo,
-            autoLogin,
-        };
+    // Validación de email y contraseña
+    const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email);
+    const isValidPassword = (password) => password.length >= 6;
 
-        AsyncStorage.setItem('LOGIN_INFO', JSON.stringify(_loginInfo));
-
-        signIn(username, password);
-
-        setTimeout(() => {
-            setIsLoading(false);
-        }, 10000);
-    };
-
-    const rememberLoginInfoHandler = (value) => {
-        setRememberLoginInfo(value);
-    };
-
-    const autoLoginHandler = (value) => {
-        setAutoLogin(value);
-    };
-
-    const getOrientation = () => {
-        if (Dimensions.get('window').width < Dimensions.get('window').height) {
-            setOrientation('portrait');
-        } else {
-            setOrientation('landscape');
+    // Lógica de autenticación
+    const handleLogin = async () => {
+        if (!isValidEmail(email)) {
+            showToast("error", "Por favor, ingresa un email válido.", 5000);
+            return;
         }
-    };
 
-    const _keyboardDidShow = () => {
-        setKeyboardShown(true);
-    };
+        if (!isValidPassword(password)) {
+            showToast("error", "La contraseña debe tener al menos 6 caracteres.", 5000);
+            return;
+        }
 
-    const _keyboardDidHide = () => {
-        setKeyboardShown(false);
+        await doLogin();
     };
 
     return (
         <View onPress={() => Keyboard.dismiss} style={styles.container}>
-            <View
-                style={[
-                    styles.titleContainer,
-                    orientation === 'landscape' ? styles.titleContainer_landscape : null,
-                    Platform.OS === 'android' && keyboardShown ? styles.titleContainer_landscape : null,
-                ]}
-            >
+            <View style={[styles.titleContainer]}>
                 <ImageBackground
                     style={{ width: '100%', height: 220, transform: [{ scaleX: 0.5 }] }}
                     imageStyle={{ resizeMode: 'stretch' }}
                     source={require('../../assets/img/imgLoginBackground.png')}
                 >
-                    <View
-                        style={[
-                            styles.titleTextContainer,
-                            orientation === 'landscape' ? styles.titleTextContainer_landscape : null,
-                            Platform.OS === 'android' && keyboardShown ? styles.titleTextContainer_landscape : null,
-                        ]}
-                    >
+                    <View style={[styles.titleTextContainer]}>
                         <Image style={styles.logo} source={require('../../assets/img/logo.png')} />
                     </View>
                 </ImageBackground>
             </View>
 
-            <View style={[styles.form, (orientation == 'landscape') ? styles.form_landscape : null]}>
+            <View style={[styles.form]}>
 
                 <ScrollView>
-                    <Text style={styles.welcomeTitle}>Bienvenido a Scan And Share!</Text>
+                    <Text style={styles.welcomeTitle}>Bienvenido a Relevamiento Visual!</Text>
 
                     <View style={styles.inputContainer}>
                         <TextInput
-                            value={username}
-                            onChangeText={(text) => setUsername(text)}
+                            value={email}
+                            onChangeText={(text) => setEmail(text)}
                             placeholder="Tu nombre de usuario"
                             placeholderTextColor={AppColors.darklight}
                             style={styles.inputStyle} />
@@ -171,12 +121,21 @@ const LoginScreen = ({ navigation }) => {
                     </View>
 
                     <View style={{ justifyContent: "center", marginTop: 25 }}>
-                        <TouchableOpacity style={[AppButton.purple, (!username?.length || !password?.length || isLoading) ? AppButton.disabled : '']} onPress={doLogin} disabled={(!username?.length || !password?.length || isLoading)}>
+                        <TouchableOpacity
+                            style={[AppButton.purple, (!email?.length || !password?.length || isLoading) ? AppButton.disabled : '']}
+                            onPress={handleLogin}
+                            disabled={(!email?.length || !password?.length || isLoading)}>
                             <Text style={AppButton.text}>Ingresar</Text>
                         </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[AppButton.purple]}
+                            onPress={registerUser}
+                            disabled={(isLoading)}>
+                            <Text style={AppButton.text}>Crear Cuenta</Text>
+                        </TouchableOpacity>
+
                     </View>
-
-
 
                 </ScrollView>
 
@@ -186,37 +145,6 @@ const LoginScreen = ({ navigation }) => {
                 <Text style={AppTxt.darklight}>v{VersionInfo.appVersion}</Text>
             </View>
 
-            <View style={styles.footer}>
-
-                <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowModal(true)}>
-                    <View style={styles.forgotPasswordContainer}>
-                        <FontAwesomeIcon icon={faLock} style={styles.footerIcon} size={16} />
-                        <Text style={styles.btnFooterText}>Olvidé mi contraseña</Text>
-                    </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={{ flex: 1 }} onPress={() => navigation.navigate('ContactInfo')}>
-                    <View style={styles.contactContainer}>
-                        <FontAwesomeIcon icon={faPhoneAlt} style={styles.footerIcon} size={16} />
-                        <Text style={styles.btnFooterText}>Contactanos</Text>
-                    </View>
-                </TouchableOpacity>
-            </View>
-
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={showModal}
-                onRequestClose={() => {
-                    console.log("Modal has been closed.");
-                }}>
-                <View style={styles.modalCenteredView}>
-                    <View style={styles.modalView}>
-                        <ForgotPasswordScreen onClose={() => setShowModal(false)} />
-                    </View>
-
-                </View>
-            </Modal>
         </View>
     )
 }
@@ -291,42 +219,9 @@ const styles = StyleSheet.create({
         paddingBottom: Platform.OS === 'ios' ? 20 : 0
 
     },
-    forgotPasswordContainer: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRightWidth: 1,
-        borderRightColor: "#ddd"
-    },
-    contactContainer: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center'
-    },
     footerIcon: {
         color: '#673AB7',
         marginRight: 10
-    },
-    modalCenteredView: {
-        flex: 1,
-        justifyContent: "center",
-        backgroundColor: 'rgba(0,0,0,.4)'
-    },
-    modalView: {
-        margin: 20,
-        backgroundColor: "white",
-        borderRadius: 20,
-        padding: 35,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5
     },
     versionContainer: {
         paddingVertical: 5,

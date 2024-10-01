@@ -1,93 +1,37 @@
-import Config from '../config/config';
-import Token from '../utils/token';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import auth from '@react-native-firebase/auth';
+import showToast from '../functions/showToast'; // Asegúrate de que esta función existe
 
-const useAuthenticationApi = () => {
-    let acontroller;
-    let signal;
-
-    // Función para hacer login
-    const doLogin = async (user, password) => {
-        acontroller = new AbortController();
-        signal = acontroller.signal;
-
-        const data = {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-            signal: signal,
-            body: JSON.stringify({
-                username: user,
-                password: password,
-            }),
-        };
-
+const useAuthenticationApi = (email, password, setIsLoading, navigation) => {
+    const doLogin = async () => {
+        setIsLoading(true);
         try {
-            const response = await fetch(`${Config.API_URL}/account/authenticate`, data);
-            return await response.json();
+            await auth().signInWithEmailAndPassword(email, password);
+            console.log('Login exitoso');
+            navigation.navigate("Home");
         } catch (error) {
-            console.log(error);
-            throw error;
+            console.error('Login failed: ', error.message);
+            showToast("error", "Credenciales inválidas", 5000);
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    // Función para recuperar contraseña
-    const forgotPassword = async (user) => {
+    const registerUser = async () => {
+        setIsLoading(true);
         try {
-            const response = await fetch(`${Config.API_URL}/account/forgotPassword?cuit=` + user);
-            const json = await response.json();
-            return json;
+            await auth().createUserWithEmailAndPassword(email, password);
+            console.log('Usuario registrado exitosamente!');
+            showToast("sucess", "Cuenta creada correctamente", 5000);
+            doLogin();
         } catch (error) {
-            console.error(error);
-            throw error;
+            console.error('Error al registrar: ', error.message);
+            Alert.alert('Error', 'Error al crear la cuenta. Inténtalo de nuevo.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    // Función para obtener información completa del usuario actual
-    const getFullCurrentUserInfo = async () => {
-        const data = {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + (await Token().getToken()),
-            },
-        };
-
-        try {
-            const USERINFO = await AsyncStorage.getItem('USERINFO');
-            if (USERINFO) {
-                return JSON.parse(USERINFO);
-            }
-
-            const response = await fetch(`${Config.API_URL}/Clientes/getFullUserInfo`, data);
-            const json = await response.json();
-
-            const userInfo = { ...json };
-            await AsyncStorage.setItem('USERINFO', JSON.stringify(userInfo));
-
-            return userInfo;
-        } catch (error) {
-            console.error(error);
-            throw error;
-        }
-    };
-
-    // Función para abortar una petición
-    const doAbort = () => {
-        if (acontroller) {
-            acontroller.abort();
-        }
-    };
-
-    return {
-        doLogin,
-        forgotPassword,
-        getFullCurrentUserInfo,
-        doAbort,
-    };
+    return { doLogin, registerUser };
 };
 
 export default useAuthenticationApi;
