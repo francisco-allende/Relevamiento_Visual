@@ -5,8 +5,14 @@ const useAuthenticationApi = (email, password, setIsLoading, navigation) => {
     const doLogin = async () => {
         setIsLoading(true);
         try {
-            await auth().signInWithEmailAndPassword(email, password);
-            console.log('Login exitoso');
+            const userCredential = await auth().signInWithEmailAndPassword(email, password);
+
+            if (!userCredential.user.emailVerified) {
+                showToast("error", "Por favor, verifica tu correo antes de iniciar sesión.", 5000);
+                await auth().signOut();
+                return;
+            }
+
             navigation.navigate("Home");
         } catch (error) {
             console.error('Login failed: ', error.message);
@@ -19,14 +25,18 @@ const useAuthenticationApi = (email, password, setIsLoading, navigation) => {
     const registerUser = async () => {
         setIsLoading(true);
         try {
-            await auth().createUserWithEmailAndPassword(email, password);
+            const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+
             console.log('Usuario registrado exitosamente!');
             showToast("success", "Cuenta creada correctamente!", 5000);
-            doLogin();
+
+            await userCredential.user.sendEmailVerification();
+            showToast("success", "Correo de verificación enviado. Revisa tu bandeja de entrada.", 5000);
         } catch (error) {
             if (error.code === 'auth/email-already-in-use') {
                 showToast("error", "Email ya en uso", 5000);
             } else {
+                console.log(error)
                 showToast("error", "Error al crear la cuenta. Inténtalo de nuevo.", 5000);
             }
         } finally {

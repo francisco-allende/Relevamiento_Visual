@@ -95,6 +95,13 @@ const RegisterScreen = ({ navigation }) => {
                             <Text style={AppButton.text}>Crear</Text>
                         </TouchableOpacity>
 
+                        <TouchableOpacity
+                            style={[{ marginTop: 10 }, AppButton.purple]}
+                            onPress={() => navigation.navigate("Login", { navigation: navigation })}
+                            disabled={(isLoading)}>
+                            <Text style={AppButton.text}>Volver</Text>
+                        </TouchableOpacity>
+
                     </View>
 
                 </ScrollView>
