@@ -8,7 +8,7 @@ const HomeScreen = () => {
     const { signOut } = useContext(AuthContext);
     const navigation = useNavigation();
 
-    const handleSingOut = async () => {
+    const handleLogOut = async () => {
         await signOut();
         navigation.navigate("Login")
     }
@@ -16,7 +16,7 @@ const HomeScreen = () => {
     return (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Text>Bienvenido a la pantalla principal!</Text>
-            <Button title="Cerrar Sesión" onPress={handleSingOut} />
+            <Button title="Cerrar Sesión" onPress={handleLogOut} />
         </View>
     );
 };

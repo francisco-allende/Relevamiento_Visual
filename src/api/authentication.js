@@ -21,11 +21,14 @@ const useAuthenticationApi = (email, password, setIsLoading, navigation) => {
         try {
             await auth().createUserWithEmailAndPassword(email, password);
             console.log('Usuario registrado exitosamente!');
-            showToast("sucess", "Cuenta creada correctamente", 5000);
+            showToast("success", "Cuenta creada correctamente!", 5000);
             doLogin();
         } catch (error) {
-            console.error('Error al registrar: ', error.message);
-            Alert.alert('Error', 'Error al crear la cuenta. Inténtalo de nuevo.');
+            if (error.code === 'auth/email-already-in-use') {
+                showToast("error", "Email ya en uso", 5000);
+            } else {
+                showToast("error", "Error al crear la cuenta. Inténtalo de nuevo.", 5000);
+            }
         } finally {
             setIsLoading(false);
         }

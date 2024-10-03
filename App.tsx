@@ -9,6 +9,7 @@ import { AuthProvider } from './src/utils/auth.context';
 import Toast from 'react-native-toast-message';
 import { LogBox } from 'react-native';
 import HomeScreen from './src/screens/home/home';
+import RegisterScreen from './src/screens/login/register';
 
 LogBox.ignoreLogs([]); // Ignora advertencias en la consola.
 
@@ -33,6 +34,12 @@ export default function App() {
             component={LoginScreen} 
             options={{ headerShown: false }} 
           />
+
+        <Stack.Screen 
+          name="Register" 
+          component={RegisterScreen}  
+          options={{ headerShown: false }} 
+        />
 
           {/* MainNavigation */}
           <Stack.Screen 
