@@ -68,6 +68,12 @@ const LoginScreen = ({ navigation }) => {
         await doLogin();
     };
 
+    const easyLogin = async () => {
+        setEmail("test@yopmail.com")
+        setPassword("12345678")
+        await handleLogin()
+    }
+
     const rememberLoginInfoHandler = (value) => {
         setRememberLoginInfo(value);
     };
@@ -82,11 +88,13 @@ const LoginScreen = ({ navigation }) => {
                 <ImageBackground
                     style={{ width: '100%', height: 220, transform: [{ scaleX: 0.5 }] }}
                     imageStyle={{ resizeMode: 'stretch' }}
-                    source={require('../../assets/img/imgLoginBackground.png')}
+                    source={require('../../assets/img/portada.png')}
                 >
+                    {/*
                     <View style={[styles.titleTextContainer]}>
                         <Image style={styles.logo} source={require('../../assets/img/logo.png')} />
                     </View>
+                    */}
                 </ImageBackground>
             </View>
 
@@ -116,7 +124,7 @@ const LoginScreen = ({ navigation }) => {
                             <FontAwesomeIcon icon={faEyeSlash} style={{ color: '#888888' }} size={25} />
                         </TouchableOpacity>
                     </View>
-
+                    {/*
                     <View style={styles.switchContainer}>
                         <MySwitch value={rememberLoginInfo} onSwitchValueChange={(value) => rememberLoginInfoHandler(value)} />
                         <Text style={styles.recordarDatos}>Recordar tu usuario</Text>
@@ -126,6 +134,7 @@ const LoginScreen = ({ navigation }) => {
                         <MySwitch value={autoLogin} onSwitchValueChange={(value) => autoLoginHandler(value)} />
                         <Text style={styles.recordarDatos}>Iniciar sesión automáticamente</Text>
                     </View>
+                    */}
 
                     <View style={{ justifyContent: "center", marginTop: 25 }}>
                         <TouchableOpacity
@@ -140,6 +149,13 @@ const LoginScreen = ({ navigation }) => {
                             onPress={() => navigation.navigate("Register", { navigation: navigation })}
                             disabled={(isLoading)}>
                             <Text style={AppButton.text}>Crear Cuenta</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[{ marginTop: 10 }, AppButton.purple]}
+                            onPress={() => easyLogin()}
+                            disabled={(isLoading)}>
+                            <Text style={AppButton.text}>Inicio rapido</Text>
                         </TouchableOpacity>
 
                     </View>
