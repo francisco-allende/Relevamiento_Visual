@@ -7,28 +7,22 @@ import {
     ImageBackground,
     Image,
     TouchableOpacity,
-    Modal,
     ScrollView,
     Keyboard,
-    Platform,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faEyeSlash, faLock, faPhoneAlt } from '@fortawesome/free-solid-svg-icons';
-import VersionInfo from 'react-native-version-info';
-import MySwitch from '../../components/MySwitch';
 import { AppColors, AppTxt, AppButton } from '../../assets/styles/default-styles';
 import { AuthContext } from '../../utils/auth.context';
 import useAuthenticationApi from '../../api/authentication';
 import showToast from '../../functions/showToast';
+import auth from '@react-native-firebase/auth';
 
 const LoginScreen = ({ navigation }) => {
 
     const { signIn } = useContext(AuthContext);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [rememberLoginInfo, setRememberLoginInfo] = useState(false);
-    const [autoLogin, setAutoLogin] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showPasswordValue, setShowPasswordValue] = useState(true);
     const [keyboardShown, setKeyboardShown] = useState(false);
@@ -54,7 +48,7 @@ const LoginScreen = ({ navigation }) => {
     const isValidPassword = (password) => password.length >= 6;
 
     // Lógica de autenticación
-    const handleLogin = async () => {
+    const handleLogin = async (isEasyLogin) => {
         if (!isValidEmail(email)) {
             showToast("error", "Por favor, ingresa un email válido.", 5000);
             return;
@@ -69,18 +63,9 @@ const LoginScreen = ({ navigation }) => {
     };
 
     const easyLogin = async () => {
-        setEmail("test@yopmail.com")
-        setPassword("12345678")
-        await handleLogin()
+        await auth().signInWithEmailAndPassword("test@yopmail.com", "12345678");
+        navigation.navigate("Home")
     }
-
-    const rememberLoginInfoHandler = (value) => {
-        setRememberLoginInfo(value);
-    };
-
-    const autoLoginHandler = (value) => {
-        setAutoLogin(value);
-    };
 
     return (
         <View onPress={() => Keyboard.dismiss} style={styles.container}>
@@ -90,17 +75,11 @@ const LoginScreen = ({ navigation }) => {
                     imageStyle={{ resizeMode: 'stretch' }}
                     source={require('../../assets/img/portada.png')}
                 >
-                    {/*
-                    <View style={[styles.titleTextContainer]}>
-                        <Image style={styles.logo} source={require('../../assets/img/logo.png')} />
-                    </View>
-                    */}
                 </ImageBackground>
             </View>
 
             <View style={[styles.form]}>
 
-                <ScrollView>
                     <Text style={styles.welcomeTitle}>Bienvenido a Relevamiento Visual!</Text>
 
                     <View style={styles.inputContainer}>
@@ -124,17 +103,6 @@ const LoginScreen = ({ navigation }) => {
                             <FontAwesomeIcon icon={faEyeSlash} style={{ color: '#888888' }} size={25} />
                         </TouchableOpacity>
                     </View>
-                    {/*
-                    <View style={styles.switchContainer}>
-                        <MySwitch value={rememberLoginInfo} onSwitchValueChange={(value) => rememberLoginInfoHandler(value)} />
-                        <Text style={styles.recordarDatos}>Recordar tu usuario</Text>
-                    </View>
-
-                    <View style={styles.switchContainer}>
-                        <MySwitch value={autoLogin} onSwitchValueChange={(value) => autoLoginHandler(value)} />
-                        <Text style={styles.recordarDatos}>Iniciar sesión automáticamente</Text>
-                    </View>
-                    */}
 
                     <View style={{ justifyContent: "center", marginTop: 25 }}>
                         <TouchableOpacity
@@ -159,15 +127,7 @@ const LoginScreen = ({ navigation }) => {
                         </TouchableOpacity>
 
                     </View>
-
-                </ScrollView>
-
             </View>
-
-            <View style={styles.versionContainer}>
-                <Text style={AppTxt.darklight}>v{VersionInfo.appVersion}</Text>
-            </View>
-
         </View>
     )
 }
@@ -175,36 +135,25 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: AppColors.white
-    },
-    logo: {
-        resizeMode: 'contain',
-        width: 200,
-        flex: 1,
+        backgroundColor: '#2C2C2C',  // Fondo oscuro
     },
     form: {
-        backgroundColor: 'white',
+        backgroundColor: '#1A1A40',  // Fondo del formulario oscuro
         flex: 1,
         paddingTop: 10,
-        paddingHorizontal: 30
-    },
-    form_landscape: {
-        paddingHorizontal: 80
-    },
-    statusBar: {
-        flex: 0,
-        backgroundColor: AppColors.purple
+        paddingHorizontal: 30,
+        borderRadius: 15,
     },
     inputContainer: {
         borderBottomWidth: 1,
-        borderColor: "#D9D5DC",
+        borderColor: "#4A5EB8",  // Borde azul tenue
         backgroundColor: "transparent",
         flexDirection: "row",
         alignItems: "center",
         marginBottom: 20
     },
     inputStyle: {
-        color: "#000",
+        color: "#D9D9D9",  // Texto gris claro
         paddingRight: 5,
         fontSize: 20,
         alignSelf: "stretch",
@@ -218,38 +167,13 @@ const styles = StyleSheet.create({
         fontSize: 24,
         marginTop: 12,
         marginBottom: 25,
-        color: '#333333'
-    },
-    btnFooterText: {
-        color: "#673AB7",
-        fontSize: 14
-    },
-    switchContainer: {
-        marginTop: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
+        color: '#AAB2FF',  // Azul claro para destacar el título
     },
     btnShowPassword: {
         width: 30,
         height: 30,
         alignItems: 'center',
         justifyContent: 'center'
-    },
-    footer: {
-        height: Platform.OS === 'ios' ? 80 : 50,
-        backgroundColor: '#eee',
-        flexDirection: 'row',
-        paddingBottom: Platform.OS === 'ios' ? 20 : 0
-
-    },
-    footerIcon: {
-        color: '#673AB7',
-        marginRight: 10
-    },
-    versionContainer: {
-        paddingVertical: 5,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     titleContainer: {
         height: 200,
@@ -260,20 +184,20 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         justifyContent: "center",
         alignItems: 'center',
-        backgroundColor: AppColors.purple
+        backgroundColor: '#7B61FF'  // Morado vibrante
     },
-    titleTextContainer: {
-        flex: 1,
-        // transform : [ { scaleX : 0.5 } ],
-        alignItems: 'center',
-        paddingTop: 10,
+    buttonStyle: {
+        backgroundColor: '#7B61FF',  // Botón morado vibrante
+        borderRadius: 25,
+        paddingVertical: 15,
+        marginBottom: 15,
     },
-    titleContainer_landscape: {
-        height: 100
+    buttonText: {
+        color: '#D9D9D9',  // Texto gris claro en los botones
+        textAlign: 'center',
+        fontSize: 18,
     },
-    titleTextContainer_landscape: {
-        paddingTop: 0
-    }
 })
+
 
 export default LoginScreen;

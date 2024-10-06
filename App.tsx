@@ -10,6 +10,9 @@ import Toast from 'react-native-toast-message';
 import { LogBox } from 'react-native';
 import HomeScreen from './src/screens/home/home';
 import RegisterScreen from './src/screens/login/register';
+import CosasLindasScreen from './src/screens/cosaLindas/cosasLindas';
+import CosasFeasScreen from './src/screens/cosasFeas/cosasFeas';
+import MisFotosScreen from './src/screens/misFotos/misFotos';
 
 LogBox.ignoreLogs([]); // Ignora advertencias en la consola.
 
@@ -52,6 +55,28 @@ export default function App() {
           <Stack.Screen 
             name="Home" 
             component={HomeScreen} 
+            options={{ headerShown: false }} 
+          />
+
+          {/* Lindas  */}
+          <Stack.Screen 
+            name="CosasLindas" 
+            component={CosasLindasScreen}
+            options={{ headerShown: false }} 
+          />
+
+          {/* Feas  */}
+          <Stack.Screen 
+            name="CosasFeas" 
+            component={CosasFeasScreen} 
+            options={{ headerShown: false }} 
+          />
+
+          
+          {/* Mis fotos subidas  */}
+          <Stack.Screen 
+            name="MisFotos" 
+            component={MisFotosScreen} 
             options={{ headerShown: false }} 
           />
 
