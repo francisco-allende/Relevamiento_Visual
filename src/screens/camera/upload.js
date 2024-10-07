@@ -7,9 +7,10 @@ const UploadScreen = ({ userId }) => {
     const [imageUrl, setImageUrl] = useState('');
 
     const handleUpload = async () => {
-        await imgManager.uploadImage(image, setImageUrl);
-        if (imageUrl) {
-            await imgManager.saveImageUrlToFirestore(imageUrl, userId);
+        const uploadedImageUrl = await imgManager.uploadImage(image);
+        setImageUrl(uploadedImageUrl); 
+        if (uploadedImageUrl) {
+            await imgManager.saveImageUrlToFirestore(uploadedImageUrl, userId);
         }
     };
 

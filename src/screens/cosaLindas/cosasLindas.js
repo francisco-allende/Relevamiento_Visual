@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, Button, FlatList } from 'react-native';
+import { View, Text, Image, Button, FlatList, StyleSheet } from 'react-native';
 import firestore from '@react-native-firebase/firestore';
 import { useAuthContext } from '../../utils/auth.context';
+import CameraScreen from '../camera/camera';
+import GoBackScreen from '../../components/go-back';
 
-const CosasLindasScreen = () => {
+const CosasLindasScreen = ({navigation}) => {
     const [images, setImages] = useState([]);
     const { user } = useAuthContext();  // Obtener el usuario actual
     const [loading, setLoading] = useState(true);
@@ -71,12 +73,25 @@ const CosasLindasScreen = () => {
     }
 
     return (
+        <>
+        <GoBackScreen/>
+        <Button 
+            onPress={()=> navigation.navigate("Camara", {navigation:navigation})} 
+            title="Tomar foto"> Tomar foto 
+        </Button>
+        {/* 
         <FlatList
             data={images}
             renderItem={renderItem}
             keyExtractor={(item) => item.id}
-        />
+            />
+        */}
+            </>
     );
 };
+
+const styles = StyleSheet.create({
+
+})
 
 export default CosasLindasScreen;

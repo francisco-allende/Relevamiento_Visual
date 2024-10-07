@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import auth from '@react-native-firebase/auth';
 
 export const AuthContext = createContext();
@@ -55,4 +55,8 @@ export const AuthProvider = ({ children }) => {
             {children}
         </AuthContext.Provider>
     );
+};
+
+export const useAuthContext = () => {
+    return useContext(AuthContext);
 };

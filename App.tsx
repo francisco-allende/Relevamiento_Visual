@@ -13,6 +13,7 @@ import RegisterScreen from './src/screens/login/register';
 import CosasLindasScreen from './src/screens/cosaLindas/cosasLindas';
 import CosasFeasScreen from './src/screens/cosasFeas/cosasFeas';
 import MisFotosScreen from './src/screens/misFotos/misFotos';
+import CameraScreen from './src/screens/camera/camera';
 
 LogBox.ignoreLogs([]); // Ignora advertencias en la consola.
 
@@ -69,6 +70,13 @@ export default function App() {
           <Stack.Screen 
             name="CosasFeas" 
             component={CosasFeasScreen} 
+            options={{ headerShown: false }} 
+          />
+
+          {/* Camara  */}
+          <Stack.Screen 
+            name="Camara" 
+            component={CameraScreen} 
             options={{ headerShown: false }} 
           />
 

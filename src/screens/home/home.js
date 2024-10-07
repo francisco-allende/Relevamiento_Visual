@@ -10,8 +10,8 @@ const HomeScreen = () => {
     const { signOut } = useContext(AuthContext);
     const navigation = useNavigation();
 
-    const handleCosasLindas = () => navigation.navigate("CosasLindas");
-    const handleCosasFeas = () => navigation.navigate("CosasFeas");
+    const handleCosasLindas = () => navigation.navigate("CosasLindas", {navigation:navigation});
+    const handleCosasFeas = () => navigation.navigate("CosasFeas", {navigation:navigation});
 
     const handleLogOut = async () => {
         await signOut();
