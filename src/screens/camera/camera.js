@@ -2,8 +2,11 @@ import React, { useRef, useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Touchable, Animated, Text } from 'react-native';
 import { Camera, useCameraDevice} from 'react-native-vision-camera';
 import imgManager from '../../functions/imgManager';
+import { usePhotoContext } from '../../utils/photo.context';
 
 const CameraScreen = ({navigation}) => {
+
+  const { addPhoto, clearPhotos } = usePhotoContext(); 
   const camera = useRef(null);
   const [fotosTomadas, setFotosTomadas] = useState([]);
   const device = useCameraDevice('back');
@@ -13,6 +16,7 @@ const CameraScreen = ({navigation}) => {
   const buttonScale = useRef(new Animated.Value(1)).current; 
 
   useEffect(() => {
+    clearPhotos()
     imgManager.setCameraRef(camera); 
     handleAskForPermission()
   }, []);
@@ -44,6 +48,7 @@ const CameraScreen = ({navigation}) => {
 
       let fotos = await imgManager.takePhoto(camera)
       if(fotos && fotos.length > 0){
+        fotos.forEach(photo => addPhoto(photo)); 
         setPhotoTaken(true)
         setFotosTomadas(fotos);
       }else{

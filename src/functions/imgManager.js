@@ -32,11 +32,9 @@ const imgManager = {
           });
           console.log("Photo taken: ", photo);
           this.fotosTomadas.push(photo)
+          showToast('success', 'Foto tomada con éxito', 2000);
 
           return this.fotosTomadas;
-        
-          //await this.uploadImage(photo.path);
-          showToast('success', 'Foto tomada con éxito', 3000);
     },
     
     selectImage(setImage){
@@ -78,10 +76,10 @@ const imgManager = {
         }
     },
     
-    async saveImageUrlToFirestore(imageUrl, userId){
+    async saveImageUrlToFirestore(imageUrl, user){
         try {
             await firestore().collection('photos').add({
-                userId: userId,
+                user: user,
                 imageUrl: imageUrl,
                 createdAt: firestore.FieldValue.serverTimestamp(),
             });
