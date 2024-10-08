@@ -20,7 +20,7 @@ const HomeScreen = () => {
     }
 
     const handleUserPhotos = () => {
-        navigation.navigate("UserPhotos"); // Suponiendo que esta es la pantalla donde ve sus fotos.
+        navigation.navigate("MisFotos"); 
     }
 
     return (

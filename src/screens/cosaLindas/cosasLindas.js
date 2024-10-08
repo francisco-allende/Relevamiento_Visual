@@ -97,7 +97,7 @@ const CosasLindasScreen = ({ navigation }) => {
       );
       setConfirmedImages(updatedImages);
     } else {
-      showToast('error', 'No se pudo registrar el voto', 2000);
+      showToast('error', 'Ya votaste por esta foto', 2000);
     }
   };
 
@@ -163,7 +163,7 @@ const CosasLindasScreen = ({ navigation }) => {
                 style={styles.confirmedList}
               />
             ) : (
-              <Text style={styles.noImagesText}>No hay imágenes confirmadas.</Text>
+              <Text style={styles.noImagesText}>Se el primero en subir una cosa linda!</Text>
             )}
           </>
         )}
