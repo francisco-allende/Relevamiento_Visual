@@ -50,7 +50,7 @@ const CosasFeasScreen = ({ navigation }) => {
     try {
       for (const photo of imgManager.fotosTomadas) {
         const imageUrl = await imgManager.uploadImage(photo.path);
-        await imgManager.saveImageUrlToFirestore(imageUrl, user.email, 'confirmada', 'fea');
+        await imgManager.saveImageUrlToFirestore(imageUrl, user, 'confirmada', 'fea');
       }
       imgManager.clearPhotos();
       setPendingImages([]);

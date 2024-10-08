@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import showToast from '../../functions/showToast';
 import firestore from '@react-native-firebase/firestore';
@@ -8,7 +8,7 @@ import imgManager from '../../functions/imgManager';
 import { AppColors } from '../../assets/styles/default-styles';
 import { useFocusEffect } from '@react-navigation/native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faCamera } from '@fortawesome/free-solid-svg-icons';
+import { faCamera, faThumbsUp } from '@fortawesome/free-solid-svg-icons';
 
 const CosasLindasScreen = ({ navigation }) => {
   const { user } = useAuthContext();
@@ -23,6 +23,7 @@ const CosasLindasScreen = ({ navigation }) => {
           const confirmedSnapshot = await firestore()
             .collection('photos')
             .where('estado', '==', 'confirmada')
+            .where('tipo', '==', 'linda')
             .orderBy('createdAt', 'desc')
             .get();
 
@@ -47,9 +48,11 @@ const CosasLindasScreen = ({ navigation }) => {
   const handleConfirmImage = async () => {
     setLoading(true);
     try {
-      for (const photo of imgManager.fotosTomadas) {
+      for (const photo of pendingImages) {
         const imageUrl = await imgManager.uploadImage(photo.path);
-        await imgManager.saveImageUrlToFirestore(imageUrl, user.email, 'confirmada', 'linda');
+        if (imageUrl) {
+          await imgManager.saveImageUrlToFirestore(imageUrl, user, 'confirmada', 'linda');
+        }
       }
       imgManager.clearPhotos();
       setPendingImages([]);
@@ -58,7 +61,7 @@ const CosasLindasScreen = ({ navigation }) => {
       const newConfirmedSnapshot = await firestore()
         .collection('photos')
         .where('estado', '==', 'confirmada')
-        .where('tipo', '==', 'fea')
+        .where('tipo', '==', 'linda')
         .orderBy('createdAt', 'desc')
         .get();
 
@@ -86,9 +89,31 @@ const CosasLindasScreen = ({ navigation }) => {
     navigation.navigate("Camara", { navigation });
   };
 
+  const handleVote = async (photoId) => {
+    const success = await imgManager.voteForPhoto(photoId, user.uid);
+    if (success) {
+      showToast('success', 'Voto registrado con éxito', 2000);
+      // Actualizar la lista de imágenes para reflejar el nuevo voto
+      const updatedImages = confirmedImages.map(img => 
+        img.id === photoId ? { ...img, votes: (img.votes || 0) + 1 } : img
+      );
+      setConfirmedImages(updatedImages);
+    } else {
+      showToast('error', 'No se pudo registrar el voto', 2000);
+    }
+  };
+
   const renderImageItem = ({ item }) => (
     <View style={styles.imageContainer}>
       <Image source={{ uri: item.imageUrl }} style={styles.image} />
+      <View style={styles.imageInfo}>
+        <Text style={styles.userName}>{item.userName} subió esta foto</Text>
+        <Text style={styles.voteCount}>Votos: {item.votes || 0}</Text>
+        <TouchableOpacity style={styles.voteButton} onPress={() => handleVote(item.id)}>
+          <FontAwesomeIcon icon={faThumbsUp} size={20} color={AppColors.white} />
+          <Text style={styles.voteButtonText}>Votar</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -129,19 +154,20 @@ const CosasLindasScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           </>
-        ) : null}
-
-        <Text style={styles.sectionTitle}>Imágenes Confirmadas</Text>
-        {confirmedImages.length > 0 ? (
-          <FlatList
-            data={confirmedImages}
-            renderItem={renderImageItem}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            style={styles.confirmedList}
-          />
         ) : (
-          <Text style={styles.noImagesText}>No hay imágenes confirmadas.</Text>
+          <>
+            <Text style={styles.sectionTitle}>Imágenes Confirmadas</Text>
+            {confirmedImages.length > 0 ? (
+              <FlatList
+                data={confirmedImages}
+                renderItem={renderImageItem}
+                keyExtractor={(item) => item.id}
+                style={styles.confirmedList}
+              />
+            ) : (
+              <Text style={styles.noImagesText}>No hay imágenes confirmadas.</Text>
+            )}
+          </>
         )}
       </View>
 
@@ -228,6 +254,44 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 2,
     borderColor: AppColors.white,
+  },
+  imageContainer: {
+    margin: 10,
+    backgroundColor: AppColors.darkgray,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: 200,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  imageInfo: {
+    padding: 10,
+  },
+  userName: {
+    color: AppColors.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  voteCount: {
+    color: AppColors.lightgray,
+    fontSize: 14,
+    marginTop: 5,
+  },
+  voteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: AppColors.purple,
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  voteButtonText: {
+    color: AppColors.white,
+    marginLeft: 10,
+    fontSize: 16,
   },
 });
 
