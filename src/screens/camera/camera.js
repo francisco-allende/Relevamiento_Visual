@@ -57,32 +57,17 @@ const CameraScreen = ({navigation}) => {
 
   async function handleUpload(){
     console.log("fotos tomadas: ", fotosTomadas)
+    imgManager.clearPhotos()
+    console.log("vacio: " ,imgManager.fotosTomadas)
 
     if (!Array.isArray(fotosTomadas)) {
       console.error('fotosTomadas no está definido o no es un array');
       return;
   }
     if (fotosTomadas) {
-
       setPhotoTaken(true)
-
-      await Promise.all(fotosTomadas.map(async (photo) => {
-        try {
-          const imageUrl = await imgManager.uploadImage(photo.path);
-          await imgManager.saveImageUrlToFirestore(imageUrl, user.email);
-          
-          // Una vez que la imagen esté subida y guardada, agregarla al contexto temporal
-          addPhoto({
-            ...photo,  
-            imageUrl: imageUrl  
-          });
-        } catch (error) {
-          console.error(`Error al subir la foto ${photo.path}: `, error);
-        }
-      }));
-
-    } else {
-      setPhotoTaken(false)
+      fotosTomadas.forEach(x=> imgManager.fotosTomadas.push(x))
+      console.log("post for each " ,imgManager.fotosTomadas)
     }
     setPhotoTaken(false)
     navigation.goBack()

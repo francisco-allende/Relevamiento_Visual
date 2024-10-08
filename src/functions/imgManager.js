@@ -19,6 +19,10 @@ const imgManager = {
       this.cameraRef = ref;
     },
 
+    clearPhotos(){
+        this.fotosTomadas = []
+    },
+
     async takePhoto(){
 
         if (!this.cameraRef || !this.cameraRef.current) {

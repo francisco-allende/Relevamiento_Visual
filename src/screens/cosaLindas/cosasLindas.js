@@ -7,6 +7,7 @@ import GoBackScreen from '../../components/go-back';
 import imgManager from '../../functions/imgManager';
 import { AppColors } from '../../assets/styles/default-styles';
 import { usePhotoContext } from '../../utils/photo.context';
+import { useFocusEffect } from '@react-navigation/native'; 
 
 const CosasLindasScreen = ({navigation}) => {
 
@@ -16,27 +17,33 @@ const CosasLindasScreen = ({navigation}) => {
     const [loading, setLoading] = useState(true);
     const [confirmedImages, setConfirmedImages] = useState([])
 
-    useEffect(() => {
-        const fetchConfirmedImages = async () => {
-          try {
-            const snapshot = await firestore()
-              .collection('photos')
-              .where('estado', '==', 'confirmadas') // Fetch only confirmed images
-              .get();
-            
-            const fetchedConfirmedImages = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
+    useFocusEffect(
+        React.useCallback(() => {
+          console.log("cosas lindas: ", imgManager.fotosTomadas);
+          
+          const fetchConfirmedImages = async () => {
+            try {
+              const snapshot = await firestore()
+                .collection('photos')
+                .where('estado', '==', 'confirmadas') // Fetch only confirmed images
+                .get();
     
-            setConfirmedImages(fetchedConfirmedImages); // Store confirmed images
-          } catch (error) {
-            console.error('Error fetching confirmed images: ', error);
-          }
-        };
-      
-        fetchConfirmedImages();
-      }, []); // Fetch confirmed images once
+              const fetchedConfirmedImages = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+              }));
+              console.log("las fetched confirmed: ", fetchedConfirmedImages)
+    
+              setConfirmedImages(fetchedConfirmedImages); // Store confirmed images
+            } catch (error) {
+             
+              console.error('Error fetching confirmed images: ', error);
+            }
+          };
+    
+          fetchConfirmedImages();
+        }, []) // Dependencias vacías aseguran que se ejecute cada vez que la pantalla recibe el foco
+      );
     
 
     useEffect(() => {
@@ -64,25 +71,23 @@ const CosasLindasScreen = ({navigation}) => {
         fetchPendingImages();
       }, [tempImages]); 
 
-      const handleConfirmImage = async (imageId) => {
+      const handleConfirmImage = async () => {
         try {
-            await firestore().collection('photos').doc(imageId).update({
-                estado: 'confirmadas', // Mark image as confirmed
-            });
-            showToast('success', 'Imagen confirmada', 3000);
-            setImages(images.filter(image => image.id !== imageId)); // Remove from pending images
+            await Promise.all(
+                imgManager.fotosTomadas.map(async (photo) => {
+                  const imageUrl = await imgManager.uploadImage(photo.path); // Sube la imagen y obtén la URL
+                  await imgManager.saveImageUrlToFirestore(imageUrl, user.email); // Guarda en Firestore
+                })
+              );
+              imgManager.clearPhotos()
         } catch (error) {
             console.error('Error confirming image: ', error);
         }
     };
     
-    const handleRejectImage = async (imageId) => {
+    const handleRejectImage = async () => {
         try {
-            await firestore().collection('photos').doc(imageId).update({
-                estado: 'rechazadas', // Mark image as rejected
-            });
-            showToast('warning', 'Imagen rechazada', 3000);
-            setImages(images.filter(image => image.id !== imageId)); // Remove from pending images
+            imgManager.clearPhotos()
         } catch (error) {
             console.error('Error rejecting image: ', error);
         }
@@ -90,25 +95,31 @@ const CosasLindasScreen = ({navigation}) => {
     
     const renderPendingImages = () => (
         <>
-            <FlatList
-                data={images}
-                renderItem={({ item, index }) => (
+          <FlatList
+                data={imgManager.fotosTomadas} // Asegúrate de que estás usando el array correcto
+                renderItem={({ item }) => (
                     <View style={styles.imageContainer}>
-                    <Image source={{ uri: item.imageUrl }} style={styles.image} />
+                        {item.path ? ( // Verifica si path existe
+                            <Image source={{ uri: item.path }} style={styles.image} />
+                        ) : (
+                            <Text>No hay imagen disponible</Text> // Mensaje alternativo
+                        )}
                     </View>
                 )}
                 keyExtractor={(item, index) => `${item.id}-${index}`}  
             />
-            <Button 
-                title="Confirmar" 
-                onPress={() => handleConfirmImage()} 
-            />
-            <Button 
-                title="Rechazar" 
-                onPress={() => handleRejectImage()} 
-            />
+            <Button
+                title='Subir'
+                onPress={()=> handleConfirmImage()}
+            ></Button>
+            <Button
+                title='Cancelar'
+                onPress={()=> handleRejectImage()}
+            ></Button>
+
         </>
       );
+      
       
        
       
@@ -134,14 +145,14 @@ const CosasLindasScreen = ({navigation}) => {
             )}
             keyExtractor={(item) => item.id}
             />
-            {tempImages.length === 0 ? (
+            {imgManager.fotosTomadas.length === 0 ? (
                 <Text style={styles.noPhotosText}>No has tomado fotos todavía.</Text>
             ) : (
                 <View>
-                    {tempImages.length === 1 ? (
+                    {imgManager.fotosTomadas.length === 1 ? (
                     <Text style={styles.photoCountText}>Has tomado una foto.</Text>
                     ) : (
-                    <Text style={styles.photoCountText}>Has tomado {tempImages.length} fotos.</Text>
+                    <Text style={styles.photoCountText}>Has tomado {imgManager.fotosTomadas.length} fotos.</Text>
                     )}
                     {renderPendingImages()} 
                 </View>
