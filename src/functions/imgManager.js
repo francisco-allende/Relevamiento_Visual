@@ -76,11 +76,12 @@ const imgManager = {
         }
     },
     
-    async saveImageUrlToFirestore(imageUrl, user){
+    async saveImageUrlToFirestore(id, imageUrl, user){
         try {
             await firestore().collection('photos').add({
-                user: user,
+                id: id,
                 imageUrl: imageUrl,
+                user: user,
                 createdAt: firestore.FieldValue.serverTimestamp(),
             });
             console.log('URL guardada en Firestore');

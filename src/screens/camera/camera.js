@@ -3,12 +3,13 @@ import { View, StyleSheet, TouchableOpacity, Touchable, Animated, Text } from 'r
 import { Camera, useCameraDevice} from 'react-native-vision-camera';
 import imgManager from '../../functions/imgManager';
 import { usePhotoContext } from '../../utils/photo.context';
+import { useAuthContext } from '../../utils/auth.context';
 
 const CameraScreen = ({navigation}) => {
 
   const { addPhoto, clearPhotos } = usePhotoContext(); 
+  const { user } = useAuthContext();  
   const camera = useRef(null);
-  const [fotosTomadas, setFotosTomadas] = useState([]);
   const device = useCameraDevice('back');
   const [isCameraInitialized, setIsCameraInitialized] = useState(false);
   const [cameraPermission, setCameraPermission] = useState(null);
@@ -33,6 +34,7 @@ const CameraScreen = ({navigation}) => {
 
   const handleTakePhoto = async () => {
     if (camera.current) {
+      
       Animated.sequence([
         Animated.timing(buttonScale, {
           toValue: 1.3,
@@ -45,18 +47,40 @@ const CameraScreen = ({navigation}) => {
           useNativeDriver: true,
         }),
       ]).start();
-
-      let fotos = await imgManager.takePhoto(camera)
-      if(fotos && fotos.length > 0){
-        fotos.forEach(photo => addPhoto(photo)); 
+  
+      let fotos = await imgManager.takePhoto(camera);
+      
+      if (fotos && fotos.length > 0) {
         setPhotoTaken(true)
-        setFotosTomadas(fotos);
-      }else{
+
+        // Subir cada foto y luego agregarla a las fotos temporales
+        await Promise.all(fotos.map(async (photo) => {
+          try {
+            // Subir la imagen a Firebase Storage
+            const imageUrl = await imgManager.uploadImage(photo.path);
+            
+            // Guardar la URL y los datos en Firestore
+            await imgManager.saveImageUrlToFirestore(photo.path, imageUrl, user.email);
+            
+            // Una vez que la imagen esté subida y guardada, agregarla al contexto temporal
+            addPhoto({
+              ...photo,  // Mantener los datos originales de la foto
+              imageUrl: imageUrl  // Añadir la URL de Firebase Storage
+            });
+  
+            console.log(`Imagen subida y guardada: ${photo.path}`);
+          } catch (error) {
+            console.error(`Error al subir la foto ${photo.path}: `, error);
+          }
+        }));
+  
+        showToast('success', 'Fotos subidas y guardadas correctamente', 3000);
+      } else {
         setPhotoTaken(false)
-        setFotosTomadas([]);
+        showToast('error', 'No se tomaron fotos', 3000);
       }
     }
-  };
+  };  
 
   return (
     <View style={styles.container}>

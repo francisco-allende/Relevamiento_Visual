@@ -3,7 +3,6 @@ import { View, Text, Image, Button, FlatList, StyleSheet, TouchableOpacity} from
 import showToast from '../../functions/showToast';
 import firestore from '@react-native-firebase/firestore';
 import { useAuthContext } from '../../utils/auth.context';
-import CameraScreen from '../camera/camera';
 import GoBackScreen from '../../components/go-back';
 import imgManager from '../../functions/imgManager';
 import { AppColors } from '../../assets/styles/default-styles';
@@ -11,31 +10,37 @@ import { usePhotoContext } from '../../utils/photo.context';
 
 const CosasLindasScreen = ({navigation}) => {
 
-    const { tempImages } = usePhotoContext(); 
+    const { tempImages, clearPhotos } = usePhotoContext(); 
     const [images, setImages] = useState([]);
-    const { user } = useAuthContext();  // Obtener el usuario actual
+    const { user } = useAuthContext();  
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchImages = async () => {
           try {
-            // Obtén todos los IDs de las imágenes temporales
-            const tempImageIds = tempImages.map(image => image.path); // Suponiendo que `path` es el ID que usas
+            const tempImageIds = tempImages.map(image => image.path);
+            console.log("ids ", tempImageIds);
       
-            // Si hay imágenes temporales, haz la consulta
-            if (tempImageIds.length > 0) {
-              const snapshot = await firestore()
-                .collection('photos')
-                .where('id', 'in', tempImageIds) // Filtrar por IDs
-                .get();
+            // Obtener todas las imágenes de Firestore
+            const snapshot = await firestore().collection('photos').get();
+
+            console.log(snapshot)
       
-              const fetchedImages = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-              }));
+            // Filtrar localmente los documentos que coincidan con los IDs temporales
+            const fetchedImages = [];
+            snapshot.docs.forEach(doc => {
+              const imageData = doc.data();
+              console.log("for each: ", imageData)
+              if (tempImageIds.includes(imageData.id)) {
+                fetchedImages.push({
+                  id: doc.id,
+                  ...imageData,
+                });
+              }
+            });
       
-              setImages(fetchedImages); // Establecer solo las imágenes temporales
-            }
+            console.log("Filtered images: ", fetchedImages);
+            setImages(fetchedImages); // Guardar las imágenes filtradas
           } catch (error) {
             console.error('Error fetching images: ', error);
           } finally {
@@ -45,12 +50,14 @@ const CosasLindasScreen = ({navigation}) => {
       
         fetchImages();
       }, [tempImages]);
+      
+      
     
-      const handleUploadAll = async () => {
+    const handleUploadAll = async () => {
         try {
           await Promise.all(tempImages.map(async (image) => {
             const imageUrl = await imgManager.uploadImage(image.path);
-            await imgManager.saveImageUrlToFirestore(imageUrl, user.email);
+            await imgManager.saveImageUrlToFirestore(image.path, imageUrl, user.email);
           }));
           showToast('success', 'Todas las imágenes han sido subidas', 3000);
         } catch (error) {
@@ -58,16 +65,15 @@ const CosasLindasScreen = ({navigation}) => {
         }
       };
     
-      // Muestra la vista de fotos temporales
-      const renderTempImages = () => (
+    const renderTempImages = () => (
         <View style={{ margin: 10 }}>
           <Text>Fotos tomadas: {tempImages.length}</Text>
           <FlatList
             data={tempImages}
             renderItem={({ item }) => (
-              <Image source={{ uri: item.uri }} style={{ width: 100, height: 100, margin: 5 }} />
+              <Image source={{ uri: item.path }} style={{ width: 100, height: 100, margin: 5 }} /> // Cambia item.uri a item.path
             )}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.path}
             horizontal
           />
           <Button 
@@ -75,7 +81,12 @@ const CosasLindasScreen = ({navigation}) => {
             onPress={handleUploadAll} 
           />
         </View>
-      );
+      );  
+      
+    const handleCamera = () => {
+        clearPhotos();
+        navigation.navigate("Camara", {navigation})
+    }
     
 
     if (loading) {
@@ -86,20 +97,20 @@ const CosasLindasScreen = ({navigation}) => {
         <>
         <GoBackScreen />
         <View style={styles.container}>
-          <FlatList
+        <FlatList
             data={images}
             renderItem={({ item }) => (
-              <View style={styles.imageContainer}>
+                <View style={styles.imageContainer}>
                 <Image source={{ uri: item.imageUrl }} style={styles.image} />
-              </View>
+                </View>
             )}
             keyExtractor={(item) => item.id}
-          />
-            {tempImages.length === 0 ? (
+            />
+            {images.length === 0 ? (
                 <Text style={styles.noPhotosText}>No has tomado fotos todavía.</Text>
             ) : (
                 <View>
-                    {tempImages.length === 1 ? (
+                    {images.length === 1 ? (
                     <Text style={styles.photoCountText}>Has tomado una foto.</Text>
                     ) : (
                     <Text style={styles.photoCountText}>Has tomado {tempImages.length} fotos.</Text>
@@ -110,7 +121,7 @@ const CosasLindasScreen = ({navigation}) => {
           <View style={styles.bottomContainer}>
             <TouchableOpacity 
               style={styles.takePhotoButton} 
-              onPress={() => navigation.navigate("Camara", {navigation})}
+              onPress={() => handleCamera()}
             >
               <Text style={styles.takePhotoButtonText}>Tomar foto</Text>
             </TouchableOpacity>
@@ -120,7 +131,7 @@ const CosasLindasScreen = ({navigation}) => {
     );
 };
     
-    const styles = StyleSheet.create({
+const styles = StyleSheet.create({
       container: {
         flex: 1,
         padding: 10,
@@ -177,6 +188,6 @@ const CosasLindasScreen = ({navigation}) => {
         fontSize: 18,
         fontWeight: 'bold',
       },
-    });
+});
 
 export default CosasLindasScreen;

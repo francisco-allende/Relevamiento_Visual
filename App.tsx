@@ -7,7 +7,9 @@ import { LogBox } from 'react-native';
 import MainNavigation from './src/main-navigation'; 
 import { PhotoProvider } from './src/utils/photo.context';
 
-LogBox.ignoreLogs(["ReactImageView: Image source 'null' doesn't exist", ]); // Ignora advertencias en la consola.
+LogBox.ignoreLogs([
+  'Non-serializable values were found in the navigation state.',
+]); 
 
 export default function App() {
   return (
