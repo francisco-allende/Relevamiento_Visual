@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faSignOutAlt, faUser } from '@fortawesome/free-solid-svg-icons';
 import AppContainer from '../../assets/app-container/container';
+import { AppColors } from '../../assets/styles/default-styles';
 
 const HomeScreen = () => {
     const { signOut } = useContext(AuthContext);
@@ -63,7 +64,7 @@ const styles = StyleSheet.create({
     headerContainer: {
         padding: 15,
         alignItems: 'center',
-        backgroundColor: '#3F3C9B',
+        backgroundColor: AppColors.purple,
         flexDirection: 'row',
         justifyContent: 'space-between'
     },

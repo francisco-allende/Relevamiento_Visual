@@ -56,9 +56,7 @@ const CameraScreen = ({navigation}) => {
   };  
 
   async function handleUpload(){
-    console.log("fotos tomadas: ", fotosTomadas)
     imgManager.clearPhotos()
-    console.log("vacio: " ,imgManager.fotosTomadas)
 
     if (!Array.isArray(fotosTomadas)) {
       console.error('fotosTomadas no está definido o no es un array');
@@ -67,7 +65,6 @@ const CameraScreen = ({navigation}) => {
     if (fotosTomadas) {
       setPhotoTaken(true)
       fotosTomadas.forEach(x=> imgManager.fotosTomadas.push(x))
-      console.log("post for each " ,imgManager.fotosTomadas)
     }
     setPhotoTaken(false)
     navigation.goBack()

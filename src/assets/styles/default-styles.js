@@ -11,7 +11,7 @@ const AppColors = {
     darklight: '#cccccc',
     dark: '#343a40',
     muted: '#6c757d',
-    purple: '#3F3C9B',
+    purple: '#1A1A40',
     pink: '#CE69D6',
     white: '#ffffff',
     orange: '#FFA500',

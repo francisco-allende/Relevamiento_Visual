@@ -1,232 +1,234 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, Button, FlatList, StyleSheet, TouchableOpacity} from 'react-native';
+import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import showToast from '../../functions/showToast';
 import firestore from '@react-native-firebase/firestore';
 import { useAuthContext } from '../../utils/auth.context';
 import GoBackScreen from '../../components/go-back';
 import imgManager from '../../functions/imgManager';
 import { AppColors } from '../../assets/styles/default-styles';
-import { usePhotoContext } from '../../utils/photo.context';
-import { useFocusEffect } from '@react-navigation/native'; 
+import { useFocusEffect } from '@react-navigation/native';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faCamera } from '@fortawesome/free-solid-svg-icons';
 
-const CosasLindasScreen = ({navigation}) => {
+const CosasLindasScreen = ({ navigation }) => {
+  const { user } = useAuthContext();
+  const [loading, setLoading] = useState(true);
+  const [confirmedImages, setConfirmedImages] = useState([]);
+  const [pendingImages, setPendingImages] = useState([]);
 
-    const { tempImages, clearPhotos } = usePhotoContext(); 
-    const [images, setImages] = useState([]);
-    const { user } = useAuthContext();  
-    const [loading, setLoading] = useState(true);
-    const [confirmedImages, setConfirmedImages] = useState([])
-
-    useFocusEffect(
-        React.useCallback(() => {
-          console.log("cosas lindas: ", imgManager.fotosTomadas);
-          
-          const fetchConfirmedImages = async () => {
-            try {
-              const snapshot = await firestore()
-                .collection('photos')
-                .where('estado', '==', 'confirmadas') // Fetch only confirmed images
-                .get();
-    
-              const fetchedConfirmedImages = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-              }));
-              console.log("las fetched confirmed: ", fetchedConfirmedImages)
-    
-              setConfirmedImages(fetchedConfirmedImages); // Store confirmed images
-            } catch (error) {
-             
-              console.error('Error fetching confirmed images: ', error);
-            }
-          };
-    
-          fetchConfirmedImages();
-        }, []) // Dependencias vacías aseguran que se ejecute cada vez que la pantalla recibe el foco
-      );
-    
-
-    useEffect(() => {
-        const fetchPendingImages = async () => {
-          try {
-            const snapshot = await firestore()
-              .collection('photos')
-              .where('user', '==', user.email)
-              .where('estado', '==', 'pendiente') // Only fetch pending images
-              .get();
-            
-            const fetchedPendingImages = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
-    
-            setImages(fetchedPendingImages); // Only pending images
-          } catch (error) {
-            console.error('Error fetching pending images: ', error);
-          } finally {
-            setLoading(false);
-          }
-        };
-      
-        fetchPendingImages();
-      }, [tempImages]); 
-
-      const handleConfirmImage = async () => {
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchImages = async () => {
         try {
-            await Promise.all(
-                imgManager.fotosTomadas.map(async (photo) => {
-                  const imageUrl = await imgManager.uploadImage(photo.path); // Sube la imagen y obtén la URL
-                  await imgManager.saveImageUrlToFirestore(imageUrl, user.email); // Guarda en Firestore
-                })
-              );
-              imgManager.clearPhotos()
-        } catch (error) {
-            console.error('Error confirming image: ', error);
-        }
-    };
-    
-    const handleRejectImage = async () => {
-        try {
-            imgManager.clearPhotos()
-        } catch (error) {
-            console.error('Error rejecting image: ', error);
-        }
-    };
-    
-    const renderPendingImages = () => (
-        <>
-          <FlatList
-                data={imgManager.fotosTomadas} // Asegúrate de que estás usando el array correcto
-                renderItem={({ item }) => (
-                    <View style={styles.imageContainer}>
-                        {item.path ? ( // Verifica si path existe
-                            <Image source={{ uri: item.path }} style={styles.image} />
-                        ) : (
-                            <Text>No hay imagen disponible</Text> // Mensaje alternativo
-                        )}
-                    </View>
-                )}
-                keyExtractor={(item, index) => `${item.id}-${index}`}  
-            />
-            <Button
-                title='Subir'
-                onPress={()=> handleConfirmImage()}
-            ></Button>
-            <Button
-                title='Cancelar'
-                onPress={()=> handleRejectImage()}
-            ></Button>
+          const confirmedSnapshot = await firestore()
+            .collection('photos')
+            .where('estado', '==', 'confirmada')
+            .orderBy('createdAt', 'desc')
+            .get();
 
-        </>
-      );
-      
-      
-       
-      
-    const handleCamera = () => {
-        clearPhotos();
-        navigation.navigate("Camara", {navigation})
-    }
-    
-    if (loading) {
-        return <Text>Cargando imágenes...</Text>;
-    }
+          const confirmedImages = confirmedSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
 
+          setConfirmedImages(confirmedImages);
+          setPendingImages(imgManager.fotosTomadas);
+        } catch (error) {
+          console.error('Error fetching images: ', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchImages();
+    }, [])
+  );
+
+  const handleConfirmImage = async () => {
+    setLoading(true);
+    try {
+      for (const photo of imgManager.fotosTomadas) {
+        const imageUrl = await imgManager.uploadImage(photo.path);
+        await imgManager.saveImageUrlToFirestore(imageUrl, user.email, 'confirmada', 'linda');
+      }
+      imgManager.clearPhotos();
+      setPendingImages([]);
+      showToast('success', 'Imágenes subidas con éxito', 3000);
+      // Actualizar la lista de imágenes confirmadas
+      const newConfirmedSnapshot = await firestore()
+        .collection('photos')
+        .where('estado', '==', 'confirmada')
+        .where('tipo', '==', 'fea')
+        .orderBy('createdAt', 'desc')
+        .get();
+
+      const newConfirmedImages = newConfirmedSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setConfirmedImages(newConfirmedImages);
+    } catch (error) {
+      console.error('Error confirming images: ', error);
+      showToast('error', 'Error al subir las imágenes', 3000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectImage = () => {
+    imgManager.clearPhotos();
+    setPendingImages([]);
+    showToast('info', 'Imágenes descartadas', 3000);
+  };
+
+  const handleCamera = () => {
+    navigation.navigate("Camara", { navigation });
+  };
+
+  const renderImageItem = ({ item }) => (
+    <View style={styles.imageContainer}>
+      <Image source={{ uri: item.imageUrl }} style={styles.image} />
+    </View>
+  );
+
+  const renderPendingImageItem = ({ item }) => (
+    <View style={styles.imageContainer}>
+      <Image source={{ uri: `file://${item.path}` }} style={styles.image} />
+    </View>
+  );
+
+  if (loading) {
     return (
-        <>
-        <GoBackScreen />
-        <View style={styles.container}>
-        <FlatList
-            data={confirmedImages}
-            renderItem={({ item }) => (
-                <View style={styles.imageContainer}>
-                <Image source={{ uri: item.imageUrl }} style={styles.image} />
-                </View>
-            )}
-            keyExtractor={(item) => item.id}
-            />
-            {imgManager.fotosTomadas.length === 0 ? (
-                <Text style={styles.noPhotosText}>No has tomado fotos todavía.</Text>
-            ) : (
-                <View>
-                    {imgManager.fotosTomadas.length === 1 ? (
-                    <Text style={styles.photoCountText}>Has tomado una foto.</Text>
-                    ) : (
-                    <Text style={styles.photoCountText}>Has tomado {imgManager.fotosTomadas.length} fotos.</Text>
-                    )}
-                    {renderPendingImages()} 
-                </View>
-            )}
-          <View style={styles.bottomContainer}>
-            <TouchableOpacity 
-              style={styles.takePhotoButton} 
-              onPress={() => handleCamera()}
-            >
-              <Text style={styles.takePhotoButtonText}>Tomar foto</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        </>
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color={AppColors.white} />
+      </View>
     );
+  }
+
+  return (
+    <View style={styles.container}>
+      <GoBackScreen />
+      <View style={styles.content}>
+        {pendingImages.length > 0 ? (
+          <>
+            <Text style={styles.sectionTitle}>Vista previa</Text>
+            <FlatList
+              data={pendingImages}
+              renderItem={renderPendingImageItem}
+              keyExtractor={(item, index) => `pending-${index}`}
+              horizontal
+              style={styles.previewList}
+            />
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmImage}>
+                <Text style={styles.buttonText}>Confirmar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.rejectButton} onPress={handleRejectImage}>
+                <Text style={styles.buttonText}>Rechazar</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : null}
+
+        <Text style={styles.sectionTitle}>Imágenes Confirmadas</Text>
+        {confirmedImages.length > 0 ? (
+          <FlatList
+            data={confirmedImages}
+            renderItem={renderImageItem}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            style={styles.confirmedList}
+          />
+        ) : (
+          <Text style={styles.noImagesText}>No hay imágenes confirmadas.</Text>
+        )}
+      </View>
+
+      <TouchableOpacity style={styles.takePhotoButton} onPress={handleCamera}>
+        <FontAwesomeIcon icon={faCamera} size={24} color={AppColors.white} />
+      </TouchableOpacity>
+    </View>
+  );
 };
-    
+
 const styles = StyleSheet.create({
-      container: {
-        flex: 1,
-        padding: 10,
-        backgroundColor: '#f8f8f8', // Fondo gris claro
-      },
-      imageContainer: {
-        margin: 10,
-        alignItems: 'center',
-      },
-      image: {
-        width: 200,
-        height: 200,
-        borderRadius: 10,
-      },
-      voteButtons: {
-        flexDirection: 'row',
-        marginTop: 10,
-      },
-      photoCountText: {
-        textAlign: 'center',
-        margin: 10,
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: AppColors.dark
-      },
-      noPhotosText: {
-        textAlign: 'center',
-        fontSize: 16,
-        color: 'gray',
-      },
-      tempImagesContainer: {
-        margin: 10,
-        alignItems: 'center',
-      },
-      tempImage: {
-        width: 100,
-        height: 100,
-        margin: 5,
-      },
-      bottomContainer: {
-        marginTop: 'auto',
-        padding: 20,
-        alignItems: 'center',
-      },
-      takePhotoButton: {
-        backgroundColor: '#007BFF', // Color azul
-        paddingVertical: 15,
-        paddingHorizontal: 30,
-        borderRadius: 5,
-        elevation: 2,
-      },
-      takePhotoButtonText: {
-        color: 'white',
-        fontSize: 18,
-        fontWeight: 'bold',
-      },
+  container: {
+    flex: 1,
+    backgroundColor: '#1A1A40',  // Fondo azul oscuro
+  },
+  content: {
+    flex: 1,
+    padding: 10,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1A1A40',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 10,
+    color: AppColors.white,
+  },
+  imageContainer: {
+    margin: 5,
+  },
+  image: {
+    width: 150,
+    height: 150,
+    borderRadius: 10,
+  },
+  previewList: {
+    marginBottom: 10,
+  },
+  confirmedList: {
+    flex: 1,
+  },
+  noImagesText: {
+    color: AppColors.white,
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 10,
+  },
+  confirmButton: {
+    backgroundColor: 'green',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  rejectButton: {
+    backgroundColor: 'red',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: AppColors.white,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  takePhotoButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: AppColors.purple,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: AppColors.white,
+  },
 });
 
 export default CosasLindasScreen;
