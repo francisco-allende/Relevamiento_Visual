@@ -14,81 +14,109 @@ const CosasLindasScreen = ({navigation}) => {
     const [images, setImages] = useState([]);
     const { user } = useAuthContext();  
     const [loading, setLoading] = useState(true);
+    const [confirmedImages, setConfirmedImages] = useState([])
 
     useEffect(() => {
-        const fetchImages = async () => {
+        const fetchConfirmedImages = async () => {
           try {
-            const tempImageIds = tempImages.map(image => image.path);
-            console.log("ids ", tempImageIds);
-      
-            // Obtener todas las imágenes de Firestore
-            const snapshot = await firestore().collection('photos').get();
-
-            console.log(snapshot)
-      
-            // Filtrar localmente los documentos que coincidan con los IDs temporales
-            const fetchedImages = [];
-            snapshot.docs.forEach(doc => {
-              const imageData = doc.data();
-              console.log("for each: ", imageData)
-              if (tempImageIds.includes(imageData.id)) {
-                fetchedImages.push({
-                  id: doc.id,
-                  ...imageData,
-                });
-              }
-            });
-      
-            console.log("Filtered images: ", fetchedImages);
-            setImages(fetchedImages); // Guardar las imágenes filtradas
+            const snapshot = await firestore()
+              .collection('photos')
+              .where('estado', '==', 'confirmadas') // Fetch only confirmed images
+              .get();
+            
+            const fetchedConfirmedImages = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+    
+            setConfirmedImages(fetchedConfirmedImages); // Store confirmed images
           } catch (error) {
-            console.error('Error fetching images: ', error);
+            console.error('Error fetching confirmed images: ', error);
+          }
+        };
+      
+        fetchConfirmedImages();
+      }, []); // Fetch confirmed images once
+    
+
+    useEffect(() => {
+        const fetchPendingImages = async () => {
+          try {
+            const snapshot = await firestore()
+              .collection('photos')
+              .where('user', '==', user.email)
+              .where('estado', '==', 'pendiente') // Only fetch pending images
+              .get();
+            
+            const fetchedPendingImages = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+    
+            setImages(fetchedPendingImages); // Only pending images
+          } catch (error) {
+            console.error('Error fetching pending images: ', error);
           } finally {
             setLoading(false);
           }
         };
       
-        fetchImages();
-      }, [tempImages]);
-      
-      
-    
-    const handleUploadAll = async () => {
+        fetchPendingImages();
+      }, [tempImages]); 
+
+      const handleConfirmImage = async (imageId) => {
         try {
-          await Promise.all(tempImages.map(async (image) => {
-            const imageUrl = await imgManager.uploadImage(image.path);
-            await imgManager.saveImageUrlToFirestore(image.path, imageUrl, user.email);
-          }));
-          showToast('success', 'Todas las imágenes han sido subidas', 3000);
+            await firestore().collection('photos').doc(imageId).update({
+                estado: 'confirmadas', // Mark image as confirmed
+            });
+            showToast('success', 'Imagen confirmada', 3000);
+            setImages(images.filter(image => image.id !== imageId)); // Remove from pending images
         } catch (error) {
-          console.error('Error uploading images: ', error);
+            console.error('Error confirming image: ', error);
         }
-      };
+    };
     
-    const renderTempImages = () => (
-        <View style={{ margin: 10 }}>
-          <Text>Fotos tomadas: {tempImages.length}</Text>
-          <FlatList
-            data={tempImages}
-            renderItem={({ item }) => (
-              <Image source={{ uri: item.path }} style={{ width: 100, height: 100, margin: 5 }} /> // Cambia item.uri a item.path
-            )}
-            keyExtractor={(item) => item.path}
-            horizontal
-          />
-          <Button 
-            title="Subir todas las fotos" 
-            onPress={handleUploadAll} 
-          />
-        </View>
-      );  
+    const handleRejectImage = async (imageId) => {
+        try {
+            await firestore().collection('photos').doc(imageId).update({
+                estado: 'rechazadas', // Mark image as rejected
+            });
+            showToast('warning', 'Imagen rechazada', 3000);
+            setImages(images.filter(image => image.id !== imageId)); // Remove from pending images
+        } catch (error) {
+            console.error('Error rejecting image: ', error);
+        }
+    };
+    
+    const renderPendingImages = () => (
+        <>
+            <FlatList
+                data={images}
+                renderItem={({ item, index }) => (
+                    <View style={styles.imageContainer}>
+                    <Image source={{ uri: item.imageUrl }} style={styles.image} />
+                    </View>
+                )}
+                keyExtractor={(item, index) => `${item.id}-${index}`}  
+            />
+            <Button 
+                title="Confirmar" 
+                onPress={() => handleConfirmImage()} 
+            />
+            <Button 
+                title="Rechazar" 
+                onPress={() => handleRejectImage()} 
+            />
+        </>
+      );
+      
+       
       
     const handleCamera = () => {
         clearPhotos();
         navigation.navigate("Camara", {navigation})
     }
     
-
     if (loading) {
         return <Text>Cargando imágenes...</Text>;
     }
@@ -98,7 +126,7 @@ const CosasLindasScreen = ({navigation}) => {
         <GoBackScreen />
         <View style={styles.container}>
         <FlatList
-            data={images}
+            data={confirmedImages}
             renderItem={({ item }) => (
                 <View style={styles.imageContainer}>
                 <Image source={{ uri: item.imageUrl }} style={styles.image} />
@@ -106,16 +134,16 @@ const CosasLindasScreen = ({navigation}) => {
             )}
             keyExtractor={(item) => item.id}
             />
-            {images.length === 0 ? (
+            {tempImages.length === 0 ? (
                 <Text style={styles.noPhotosText}>No has tomado fotos todavía.</Text>
             ) : (
                 <View>
-                    {images.length === 1 ? (
+                    {tempImages.length === 1 ? (
                     <Text style={styles.photoCountText}>Has tomado una foto.</Text>
                     ) : (
                     <Text style={styles.photoCountText}>Has tomado {tempImages.length} fotos.</Text>
                     )}
-                    {renderTempImages()} 
+                    {renderPendingImages()} 
                 </View>
             )}
           <View style={styles.bottomContainer}>

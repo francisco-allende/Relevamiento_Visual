@@ -15,6 +15,7 @@ const CameraScreen = ({navigation}) => {
   const [cameraPermission, setCameraPermission] = useState(null);
   const [photoTaken, setPhotoTaken] = useState(false); 
   const buttonScale = useRef(new Animated.Value(1)).current; 
+  const [fotosTomadas, setFotosTomadas] = useState([])
 
   useEffect(() => {
     clearPhotos()
@@ -48,39 +49,44 @@ const CameraScreen = ({navigation}) => {
         }),
       ]).start();
   
-      let fotos = await imgManager.takePhoto(camera);
-      
-      if (fotos && fotos.length > 0) {
-        setPhotoTaken(true)
-
-        // Subir cada foto y luego agregarla a las fotos temporales
-        await Promise.all(fotos.map(async (photo) => {
-          try {
-            // Subir la imagen a Firebase Storage
-            const imageUrl = await imgManager.uploadImage(photo.path);
-            
-            // Guardar la URL y los datos en Firestore
-            await imgManager.saveImageUrlToFirestore(photo.path, imageUrl, user.email);
-            
-            // Una vez que la imagen esté subida y guardada, agregarla al contexto temporal
-            addPhoto({
-              ...photo,  // Mantener los datos originales de la foto
-              imageUrl: imageUrl  // Añadir la URL de Firebase Storage
-            });
-  
-            console.log(`Imagen subida y guardada: ${photo.path}`);
-          } catch (error) {
-            console.error(`Error al subir la foto ${photo.path}: `, error);
-          }
-        }));
-  
-        showToast('success', 'Fotos subidas y guardadas correctamente', 3000);
-      } else {
-        setPhotoTaken(false)
-        showToast('error', 'No se tomaron fotos', 3000);
-      }
+      let foto = await imgManager.takePhoto(camera);
+      fotosTomadas.push(foto)
+      setPhotoTaken(true)
     }
   };  
+
+  async function handleUpload(){
+    console.log("fotos tomadas: ", fotosTomadas)
+
+    if (!Array.isArray(fotosTomadas)) {
+      console.error('fotosTomadas no está definido o no es un array');
+      return;
+  }
+    if (fotosTomadas) {
+
+      setPhotoTaken(true)
+
+      await Promise.all(fotosTomadas.map(async (photo) => {
+        try {
+          const imageUrl = await imgManager.uploadImage(photo.path);
+          await imgManager.saveImageUrlToFirestore(imageUrl, user.email);
+          
+          // Una vez que la imagen esté subida y guardada, agregarla al contexto temporal
+          addPhoto({
+            ...photo,  
+            imageUrl: imageUrl  
+          });
+        } catch (error) {
+          console.error(`Error al subir la foto ${photo.path}: `, error);
+        }
+      }));
+
+    } else {
+      setPhotoTaken(false)
+    }
+    setPhotoTaken(false)
+    navigation.goBack()
+  }
 
   return (
     <View style={styles.container}>
@@ -104,7 +110,7 @@ const CameraScreen = ({navigation}) => {
 
           {/* Botón "Listo" si ya se tomó al menos una foto */}
           {photoTaken && (
-            <TouchableOpacity style={styles.readyButton} onPress={() => navigation.goBack()}>
+            <TouchableOpacity style={styles.readyButton} onPress={() => handleUpload()}>
               <Text style={styles.readyButtonText}>Listo</Text>
             </TouchableOpacity>
           )}

@@ -30,11 +30,9 @@ const imgManager = {
             flash: 'off',
             qualityPrioritization: 'speed',
           });
-          console.log("Photo taken: ", photo);
-          this.fotosTomadas.push(photo)
-          showToast('success', 'Foto tomada con éxito', 2000);
+          showToast('success', 'Foto tomada con éxito', 1000);
 
-          return this.fotosTomadas;
+          return photo;
     },
     
     selectImage(setImage){
@@ -76,12 +74,12 @@ const imgManager = {
         }
     },
     
-    async saveImageUrlToFirestore(id, imageUrl, user){
+    async saveImageUrlToFirestore(imageUrl, user){
         try {
             await firestore().collection('photos').add({
-                id: id,
                 imageUrl: imageUrl,
                 user: user,
+                estado: 'pendiente',
                 createdAt: firestore.FieldValue.serverTimestamp(),
             });
             console.log('URL guardada en Firestore');
