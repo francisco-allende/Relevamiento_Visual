@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import showToast from '../../functions/showToast';
 import firestore from '@react-native-firebase/firestore';
@@ -8,7 +8,7 @@ import imgManager from '../../functions/imgManager';
 import { AppColors } from '../../assets/styles/default-styles';
 import { useFocusEffect } from '@react-navigation/native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faCamera } from '@fortawesome/free-solid-svg-icons';
+import { faCamera, faThumbsDown } from '@fortawesome/free-solid-svg-icons';
 
 const CosasFeasScreen = ({ navigation }) => {
   const { user } = useAuthContext();
@@ -87,9 +87,31 @@ const CosasFeasScreen = ({ navigation }) => {
     navigation.navigate("Camara", { navigation });
   };
 
+  const handleVote = async (photoId) => {
+    const success = await imgManager.voteForPhoto(photoId, user.uid);
+    if (success) {
+      showToast('success', 'Voto registrado con éxito', 2000);
+      // Actualizar la lista de imágenes para reflejar el nuevo voto
+      const updatedImages = confirmedImages.map(img => 
+        img.id === photoId ? { ...img, votes: (img.votes || 0) + 1 } : img
+      );
+      setConfirmedImages(updatedImages);
+    } else {
+      showToast('error', 'No se pudo registrar el voto', 2000);
+    }
+  };
+
   const renderImageItem = ({ item }) => (
     <View style={styles.imageContainer}>
       <Image source={{ uri: item.imageUrl }} style={styles.image} />
+      <View style={styles.imageInfo}>
+        <Text style={styles.userName}>{item.userName} subió esta foto</Text>
+        <Text style={styles.voteCount}>Votos: {item.votes || 0}</Text>
+        <TouchableOpacity style={styles.voteButton} onPress={() => handleVote(item.id)}>
+          <FontAwesomeIcon icon={faThumbsDown} size={20} color={AppColors.white} />
+          <Text style={styles.voteButtonText}>Votar</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -130,19 +152,20 @@ const CosasFeasScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           </>
-        ) : null}
-
-        <Text style={styles.sectionTitle}>Imágenes Confirmadas</Text>
-        {confirmedImages.length > 0 ? (
-          <FlatList
-            data={confirmedImages}
-            renderItem={renderImageItem}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            style={styles.confirmedList}
-          />
         ) : (
-          <Text style={styles.noImagesText}>No hay imágenes confirmadas.</Text>
+          <>
+            <Text style={styles.sectionTitle}>Imágenes Confirmadas</Text>
+            {confirmedImages.length > 0 ? (
+              <FlatList
+                data={confirmedImages}
+                renderItem={renderImageItem}
+                keyExtractor={(item) => item.id}
+                style={styles.confirmedList}
+              />
+            ) : (
+              <Text style={styles.noImagesText}>No hay imágenes confirmadas.</Text>
+            )}
+          </>
         )}
       </View>
 
@@ -156,7 +179,7 @@ const CosasFeasScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#2C2C2C',  // Fondo gris oscuro
+    backgroundColor: '#2C2C2C',  // Fondo gris oscuro para cosas feas
   },
   content: {
     flex: 1,
@@ -229,6 +252,32 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 2,
     borderColor: AppColors.lightgray,
+  },
+  imageInfo: {
+    padding: 10,
+  },
+  userName: {
+    color: AppColors.lightgray,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  voteCount: {
+    color: AppColors.lightgray,
+    fontSize: 14,
+    marginTop: 5,
+  },
+  voteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: AppColors.darkgray,
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  voteButtonText: {
+    color: AppColors.white,
+    marginLeft: 10,
+    fontSize: 16,
   },
 });
 

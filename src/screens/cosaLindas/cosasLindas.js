@@ -48,11 +48,9 @@ const CosasLindasScreen = ({ navigation }) => {
   const handleConfirmImage = async () => {
     setLoading(true);
     try {
-      for (const photo of pendingImages) {
+      for (const photo of imgManager.fotosTomadas) {
         const imageUrl = await imgManager.uploadImage(photo.path);
-        if (imageUrl) {
-          await imgManager.saveImageUrlToFirestore(imageUrl, user, 'confirmada', 'linda');
-        }
+        await imgManager.saveImageUrlToFirestore(imageUrl, user, 'confirmada', 'linda');
       }
       imgManager.clearPhotos();
       setPendingImages([]);
@@ -181,7 +179,7 @@ const CosasLindasScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A1A40',  // Fondo azul oscuro
+    backgroundColor: '#1A1A40',  // Fondo azul oscuro para cosas lindas
   },
   content: {
     flex: 1,
@@ -254,18 +252,6 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 2,
     borderColor: AppColors.white,
-  },
-  imageContainer: {
-    margin: 10,
-    backgroundColor: AppColors.darkgray,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  image: {
-    width: '100%',
-    height: 200,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
   },
   imageInfo: {
     padding: 10,
