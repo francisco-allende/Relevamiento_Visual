@@ -1,20 +1,35 @@
-import React, { useState } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  Image,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Modal,
+} from 'react-native';
 import showToast from '../../functions/showToast';
 import firestore from '@react-native-firebase/firestore';
-import { useAuthContext } from '../../utils/auth.context';
+import {useAuthContext} from '../../utils/auth.context';
 import GoBackScreen from '../../components/go-back';
 import imgManager from '../../functions/imgManager';
-import { AppColors } from '../../assets/styles/default-styles';
-import { useFocusEffect } from '@react-navigation/native';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faCamera, faThumbsUp } from '@fortawesome/free-solid-svg-icons';
+import {AppColors} from '../../assets/styles/default-styles';
+import {useFocusEffect} from '@react-navigation/native';
+import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
+import {
+  faCamera,
+  faThumbsUp,
+  faChartPie,
+} from '@fortawesome/free-solid-svg-icons';
+import PhotoStats from '../stats/photo-stats';
 
-const CosasLindasScreen = ({ navigation }) => {
-  const { user } = useAuthContext();
+const CosasLindasScreen = ({navigation}) => {
+  const {user} = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [confirmedImages, setConfirmedImages] = useState([]);
   const [pendingImages, setPendingImages] = useState([]);
+  const [showStats, setShowStats] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -42,7 +57,7 @@ const CosasLindasScreen = ({ navigation }) => {
       };
 
       fetchImages();
-    }, [])
+    }, []),
   );
 
   const handleConfirmImage = async () => {
@@ -50,7 +65,12 @@ const CosasLindasScreen = ({ navigation }) => {
     try {
       for (const photo of imgManager.fotosTomadas) {
         const imageUrl = await imgManager.uploadImage(photo.path);
-        await imgManager.saveImageUrlToFirestore(imageUrl, user, 'confirmada', 'linda');
+        await imgManager.saveImageUrlToFirestore(
+          imageUrl,
+          user,
+          'confirmada',
+          'linda',
+        );
       }
       imgManager.clearPhotos();
       setPendingImages([]);
@@ -84,16 +104,16 @@ const CosasLindasScreen = ({ navigation }) => {
   };
 
   const handleCamera = () => {
-    navigation.navigate("Camara", { navigation });
+    navigation.navigate('Camara', {navigation});
   };
 
-  const handleVote = async (photoId) => {
+  const handleVote = async photoId => {
     const success = await imgManager.voteForPhoto(photoId, user.uid);
     if (success) {
       showToast('success', 'Voto registrado con éxito', 2000);
       // Actualizar la lista de imágenes para reflejar el nuevo voto
-      const updatedImages = confirmedImages.map(img => 
-        img.id === photoId ? { ...img, votes: (img.votes || 0) + 1 } : img
+      const updatedImages = confirmedImages.map(img =>
+        img.id === photoId ? {...img, votes: (img.votes || 0) + 1} : img,
       );
       setConfirmedImages(updatedImages);
     } else {
@@ -101,23 +121,29 @@ const CosasLindasScreen = ({ navigation }) => {
     }
   };
 
-  const renderImageItem = ({ item }) => (
+  const renderImageItem = ({item}) => (
     <View style={styles.imageContainer}>
-      <Image source={{ uri: item.imageUrl }} style={styles.image} />
+      <Image source={{uri: item.imageUrl}} style={styles.image} />
       <View style={styles.imageInfo}>
         <Text style={styles.userName}>{item.userName} subió esta foto</Text>
         <Text style={styles.voteCount}>Votos: {item.votes || 0}</Text>
-        <TouchableOpacity style={styles.voteButton} onPress={() => handleVote(item.id)}>
-          <FontAwesomeIcon icon={faThumbsUp} size={20} color={AppColors.white} />
+        <TouchableOpacity
+          style={styles.voteButton}
+          onPress={() => handleVote(item.id)}>
+          <FontAwesomeIcon
+            icon={faThumbsUp}
+            size={20}
+            color={AppColors.white}
+          />
           <Text style={styles.voteButtonText}>Votar</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
-  const renderPendingImageItem = ({ item }) => (
+  const renderPendingImageItem = ({item}) => (
     <View style={styles.imageContainer}>
-      <Image source={{ uri: `file://${item.path}` }} style={styles.image} />
+      <Image source={{uri: `file://${item.path}`}} style={styles.image} />
     </View>
   );
 
@@ -131,7 +157,18 @@ const CosasLindasScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <GoBackScreen />
+      <View style={styles.header}>
+        <GoBackScreen />
+        <TouchableOpacity
+          onPress={() => setShowStats(true)}
+          style={styles.statsIcon}>
+          <FontAwesomeIcon
+            icon={faChartPie}
+            size={24}
+            color={AppColors.white}
+          />
+        </TouchableOpacity>
+      </View>
       <View style={styles.content}>
         {pendingImages.length > 0 ? (
           <>
@@ -144,10 +181,14 @@ const CosasLindasScreen = ({ navigation }) => {
               style={styles.previewList}
             />
             <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmImage}>
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={handleConfirmImage}>
                 <Text style={styles.buttonText}>Confirmar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.rejectButton} onPress={handleRejectImage}>
+              <TouchableOpacity
+                style={styles.rejectButton}
+                onPress={handleRejectImage}>
                 <Text style={styles.buttonText}>Rechazar</Text>
               </TouchableOpacity>
             </View>
@@ -159,11 +200,13 @@ const CosasLindasScreen = ({ navigation }) => {
               <FlatList
                 data={confirmedImages}
                 renderItem={renderImageItem}
-                keyExtractor={(item) => item.id}
+                keyExtractor={item => item.id}
                 style={styles.confirmedList}
               />
             ) : (
-              <Text style={styles.noImagesText}>Se el primero en subir una cosa linda!</Text>
+              <Text style={styles.noImagesText}>
+                Se el primero en subir una cosa linda!
+              </Text>
             )}
           </>
         )}
@@ -172,6 +215,18 @@ const CosasLindasScreen = ({ navigation }) => {
       <TouchableOpacity style={styles.takePhotoButton} onPress={handleCamera}>
         <FontAwesomeIcon icon={faCamera} size={24} color={AppColors.white} />
       </TouchableOpacity>
+
+      <Modal
+        visible={showStats}
+        animationType="slide"
+        onRequestClose={() => setShowStats(false)}>
+        <PhotoStats type="linda" />
+        <TouchableOpacity
+          style={styles.closeStatsButton}
+          onPress={() => setShowStats(false)}>
+          <Text style={styles.closeStatsButtonText}>Cerrar</Text>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -179,7 +234,7 @@ const CosasLindasScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A1A40',  // Fondo azul oscuro para cosas lindas
+    backgroundColor: '#1A1A40', // Fondo azul oscuro para cosas lindas
   },
   content: {
     flex: 1,
@@ -277,6 +332,29 @@ const styles = StyleSheet.create({
   voteButtonText: {
     color: AppColors.white,
     marginLeft: 10,
+    fontSize: 16,
+  },
+  //stats
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: AppColors.purple,
+  },
+  statsIcon: {
+    padding: 10,
+  },
+  closeStatsButton: {
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    backgroundColor: AppColors.purple,
+    padding: 10,
+    borderRadius: 5,
+  },
+  closeStatsButtonText: {
+    color: AppColors.white,
     fontSize: 16,
   },
 });
