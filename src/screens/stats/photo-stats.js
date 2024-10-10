@@ -7,6 +7,7 @@ import {
   Image,
   Modal,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import {
   VictoryPie,
@@ -14,7 +15,6 @@ import {
   VictoryChart,
   VictoryAxis,
   VictoryTheme,
-  VictoryLabel,
 } from 'victory-native';
 import firestore from '@react-native-firebase/firestore';
 import {AppColors} from '../../assets/styles/default-styles';
@@ -24,6 +24,7 @@ const screenWidth = Dimensions.get('window').width;
 const PhotoStats = ({type}) => {
   const [data, setData] = useState([]);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchTopPhotos();
@@ -57,7 +58,10 @@ const PhotoStats = ({type}) => {
 
   const handleSelectDataPoint = (event, datum) => {
     console.log('Selected datum:', datum);
-    setSelectedPhoto(datum.datum || datum);
+    setLoading(true);
+    const selectedData = datum.datum || datum;
+    setSelectedPhoto(selectedData);
+    setLoading(false);
   };
 
   const closeModal = () => {
@@ -122,7 +126,10 @@ const PhotoStats = ({type}) => {
               {
                 target: 'data',
                 eventHandlers: {
-                  onPress: handleSelectDataPoint,
+                  onPress: (evt, targetProps) => {
+                    const {datum} = targetProps;
+                    handleSelectDataPoint(null, {datum});
+                  },
                 },
               },
             ]}
@@ -135,7 +142,9 @@ const PhotoStats = ({type}) => {
         onRequestClose={closeModal}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            {selectedPhoto && (
+            {loading ? (
+              <ActivityIndicator size="large" color={AppColors.purple} />
+            ) : selectedPhoto ? (
               <>
                 {console.log('Modal photo data:', selectedPhoto)}
                 {selectedPhoto.imageUrl ? (
@@ -157,6 +166,10 @@ const PhotoStats = ({type}) => {
                   selectedPhoto.votes || 0
                 }`}</Text>
               </>
+            ) : (
+              <Text style={styles.errorText}>
+                No se pudo cargar la información de la foto
+              </Text>
             )}
             <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
               <Text style={styles.closeButtonText}>Cerrar</Text>
