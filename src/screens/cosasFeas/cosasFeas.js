@@ -205,7 +205,7 @@ const CosasFeasScreen = ({navigation}) => {
               />
             ) : (
               <Text style={styles.noImagesText}>
-                Se el primero en subir una cosa fea!
+                Sé el primero en subir una cosa fea!
               </Text>
             )}
           </>

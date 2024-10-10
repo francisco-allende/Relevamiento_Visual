@@ -205,7 +205,7 @@ const CosasLindasScreen = ({navigation}) => {
               />
             ) : (
               <Text style={styles.noImagesText}>
-                Se el primero en subir una cosa linda!
+                Sé el primero en subir una cosa linda!
               </Text>
             )}
           </>
