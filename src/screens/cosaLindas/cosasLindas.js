@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#120E29', // Fondo gris oscuro
+    backgroundColor: '#120E29',
   },
 });
 

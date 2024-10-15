@@ -89,7 +89,7 @@ const MisFotosScreen = ({navigation}) => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color={AppColors.white} />
       </View>
     );
@@ -170,6 +170,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 20,
     color: AppColors.white,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#120E29',
   },
 });
 
