@@ -1,6 +1,5 @@
 import React, {useEffect} from 'react';
 import {View, Text, Image, StyleSheet} from 'react-native';
-import {AppColors} from '../../assets/styles/default-styles';
 
 const SplashScreen = ({navigation}) => {
   useEffect(() => {
@@ -13,13 +12,17 @@ const SplashScreen = ({navigation}) => {
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require('./../../assets/img/edificios.png')}
-        style={styles.icon}
-      />
-      <Text style={styles.title}>Relevamiento Visual</Text>
-      <Text style={styles.info}>Francisco Allende</Text>
-      <Text style={styles.info}>División A141-2</Text>
+      <View style={styles.topSection}>
+        <Image
+          source={require('../../assets/img/icono.png')}
+          style={styles.icon}
+        />
+        <Text style={styles.title}>Relevamiento Visual</Text>
+      </View>
+      <View style={styles.bottomSection}>
+        <Text style={styles.info}>Francisco Allende</Text>
+        <Text style={styles.info}>División A141-2</Text>
+      </View>
     </View>
   );
 };
@@ -27,25 +30,35 @@ const SplashScreen = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#3F3C9B',
+    paddingVertical: 50,
+  },
+  topSection: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#5D5D61',
   },
   icon: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
+    width: 200,
+    height: 200,
+    marginBottom: 30,
   },
   title: {
-    fontSize: 24,
+    fontSize: 36,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 20,
+    textAlign: 'center',
+    marginHorizontal: 20,
+  },
+  bottomSection: {
+    alignItems: 'center',
   },
   info: {
-    fontSize: 18,
+    fontSize: 24,
     color: 'white',
-    marginBottom: 10,
+    marginBottom: 15,
   },
 });
 

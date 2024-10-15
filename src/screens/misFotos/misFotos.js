@@ -1,16 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import firestore from '@react-native-firebase/firestore';
-import { useAuthContext } from '../../utils/auth.context';
+import {useAuthContext} from '../../utils/auth.context';
 import GoBackScreen from '../../components/go-back';
-import { AppColors } from '../../assets/styles/default-styles';
-import { format } from 'date-fns';
+import {AppColors} from '../../assets/styles/default-styles';
+import {format} from 'date-fns';
 
-const MisFotosScreen = ({ navigation }) => {
+const MisFotosScreen = ({navigation}) => {
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showNoPhotosMessage, setShowNoPhotosMessage] = useState(false);
-  const { user } = useAuthContext();
+  const {user} = useAuthContext();
 
   useEffect(() => {
     const fetchPhotos = async () => {
@@ -44,15 +51,15 @@ const MisFotosScreen = ({ navigation }) => {
     fetchPhotos();
   }, [user]);
 
-  const handleImageLoad = (id) => {
+  const handleImageLoad = id => {
     setPhotos(prevPhotos =>
       prevPhotos.map(photo =>
-        photo.id === id ? { ...photo, imageLoading: false } : photo
-      )
+        photo.id === id ? {...photo, imageLoading: false} : photo,
+      ),
     );
   };
 
-  const renderPhotoItem = ({ item }) => (
+  const renderPhotoItem = ({item}) => (
     <View style={styles.photoItem}>
       <View style={styles.photoContainer}>
         {item.imageLoading && (
@@ -63,20 +70,18 @@ const MisFotosScreen = ({ navigation }) => {
           />
         )}
         <Image
-          source={{ uri: item.imageUrl }}
+          source={{uri: item.imageUrl}}
           style={styles.photo}
           onLoad={() => handleImageLoad(item.id)}
         />
       </View>
-      <View style={styles.photoInfo}>
+      <View style={styles.photoInfoContainer}>
         <Text style={styles.photoInfoText}>
           Sección: {item.tipo === 'linda' ? 'Linda' : 'Fea'}
         </Text>
+        <Text style={styles.photoInfoText}>Votos: {item.votes || 0}</Text>
         <Text style={styles.photoInfoText}>
-          Votos: {item.votes || 0}
-        </Text>
-        <Text style={styles.photoInfoText}>
-          Fecha: {format(item.createdAt.toDate(), 'dd/MM/yyyy')}
+          Fecha: {format(item.createdAt.toDate(), 'dd/MM/yyyy HH:mm:ss')}
         </Text>
       </View>
     </View>
@@ -97,7 +102,7 @@ const MisFotosScreen = ({ navigation }) => {
       {photos.length > 0 ? (
         <FlatList
           data={photos}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           renderItem={renderPhotoItem}
           contentContainerStyle={styles.photoList}
         />
@@ -111,15 +116,8 @@ const MisFotosScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  // ... (estilos anteriores se mantienen igual)
   container: {
     flex: 1,
-    backgroundColor: '#2A2A5A',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: '#2A2A5A',
   },
   title: {
@@ -158,12 +156,13 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },
-  photoInfo: {
+  photoInfoContainer: {
     padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)', // Fondo semi-transparente para el contenedor de información
   },
   photoInfoText: {
-    color: AppColors.white,
-    fontSize: 14,
+    color: 'yellow',
+    fontSize: 18,
     marginBottom: 5,
   },
   noPhotosText: {

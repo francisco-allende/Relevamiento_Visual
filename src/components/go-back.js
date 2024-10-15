@@ -28,7 +28,7 @@ export default function GoBackScreen({text}) {
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: AppColors.purple,
+    backgroundColor: 'transparent',
     color: AppColors.white,
     flexDirection: 'row',
     justifyContent: 'flex-start',

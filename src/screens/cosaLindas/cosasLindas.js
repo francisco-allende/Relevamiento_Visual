@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Modal,
+  Dimensions,
 } from 'react-native';
 import showToast from '../../functions/showToast';
 import firestore from '@react-native-firebase/firestore';
@@ -23,6 +24,9 @@ import {
   faChartPie,
 } from '@fortawesome/free-solid-svg-icons';
 import PhotoStats from '../stats/photo-stats';
+import {format} from 'date-fns';
+
+const {width} = Dimensions.get('window');
 
 const CosasLindasScreen = ({navigation}) => {
   const {user} = useAuthContext();
@@ -126,6 +130,9 @@ const CosasLindasScreen = ({navigation}) => {
       <Image source={{uri: item.imageUrl}} style={styles.image} />
       <View style={styles.imageInfo}>
         <Text style={styles.userName}>{item.userName} subió esta foto</Text>
+        <Text style={styles.dateText}>
+          {format(item.createdAt.toDate(), 'dd/MM/yyyy HH:mm:ss')}
+        </Text>
         <Text style={styles.voteCount}>Votos: {item.votes || 0}</Text>
         <TouchableOpacity
           style={styles.voteButton}
@@ -142,15 +149,18 @@ const CosasLindasScreen = ({navigation}) => {
   );
 
   const renderPendingImageItem = ({item}) => (
-    <View style={styles.imageContainer}>
-      <Image source={{uri: `file://${item.path}`}} style={styles.image} />
+    <View style={styles.pendingImageContainer}>
+      <Image
+        source={{uri: `file://${item.path}`}}
+        style={styles.pendingImage}
+      />
     </View>
   );
 
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color={AppColors.white} />
+        <ActivityIndicator size="large" color="#FFFFFF" />
       </View>
     );
   }
@@ -172,13 +182,13 @@ const CosasLindasScreen = ({navigation}) => {
       <View style={styles.content}>
         {pendingImages.length > 0 ? (
           <>
-            <Text style={styles.sectionTitle}>Vista previa</Text>
+            <Text style={styles.previewTitle}>Vista previa</Text>
             <FlatList
               data={pendingImages}
               renderItem={renderPendingImageItem}
               keyExtractor={(item, index) => `pending-${index}`}
-              horizontal
               style={styles.previewList}
+              contentContainerStyle={styles.previewListContent}
             />
             <View style={styles.buttonContainer}>
               <TouchableOpacity
@@ -205,16 +215,18 @@ const CosasLindasScreen = ({navigation}) => {
               />
             ) : (
               <Text style={styles.noImagesText}>
-                Sé el primero en subir una cosa linda!
+                ¡Sé el primero en subir una cosa linda!
               </Text>
             )}
           </>
         )}
       </View>
 
-      <TouchableOpacity style={styles.takePhotoButton} onPress={handleCamera}>
-        <FontAwesomeIcon icon={faCamera} size={24} color={AppColors.white} />
-      </TouchableOpacity>
+      {pendingImages.length === 0 && (
+        <TouchableOpacity style={styles.takePhotoButton} onPress={handleCamera}>
+          <FontAwesomeIcon icon={faCamera} size={24} color={AppColors.white} />
+        </TouchableOpacity>
+      )}
 
       <Modal
         visible={showStats}
@@ -234,17 +246,25 @@ const CosasLindasScreen = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A1A40', // Fondo azul oscuro para cosas lindas
+    backgroundColor: '#120E29', // Fondo oscuro similar al login
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: AppColors.purple,
   },
   content: {
     flex: 1,
     padding: 10,
   },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1A1A40',
+  previewTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: AppColors.white,
+    textAlign: 'center',
+    marginVertical: 20,
   },
   sectionTitle: {
     fontSize: 18,
@@ -252,61 +272,35 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     color: AppColors.white,
   },
-  imageContainer: {
-    margin: 5,
-  },
-  image: {
-    width: 150,
-    height: 150,
-    borderRadius: 10,
-  },
   previewList: {
-    marginBottom: 10,
+    flex: 1,
+  },
+  previewListContent: {
+    paddingBottom: 20,
+  },
+  pendingImageContainer: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  pendingImage: {
+    width: '100%',
+    height: width * 0.6,
+    borderRadius: 10,
   },
   confirmedList: {
     flex: 1,
   },
-  noImagesText: {
-    color: AppColors.white,
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 20,
+  imageContainer: {
+    marginBottom: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 10,
+    overflow: 'hidden',
   },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 10,
-  },
-  confirmButton: {
-    backgroundColor: 'green',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-  },
-  rejectButton: {
-    backgroundColor: 'red',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: AppColors.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  takePhotoButton: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    backgroundColor: AppColors.purple,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    borderWidth: 2,
-    borderColor: AppColors.white,
+  image: {
+    width: '100%',
+    height: width * 0.6,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
   imageInfo: {
     padding: 10,
@@ -315,6 +309,11 @@ const styles = StyleSheet.create({
     color: AppColors.white,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  dateText: {
+    color: AppColors.lightgray,
+    fontSize: 14,
+    marginTop: 5,
   },
   voteCount: {
     color: AppColors.lightgray,
@@ -334,13 +333,50 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 16,
   },
-  //stats
-  header: {
+  buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  confirmButton: {
+    flex: 1,
+    backgroundColor: AppColors.success,
+    padding: 15,
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  rejectButton: {
+    flex: 1,
+    backgroundColor: AppColors.danger,
+    padding: 15,
+    borderRadius: 10,
+    marginLeft: 10,
+  },
+  buttonText: {
+    color: AppColors.white,
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  takePhotoButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
     backgroundColor: AppColors.purple,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    zIndex: 1,
+  },
+  noImagesText: {
+    color: AppColors.white,
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
   },
   statsIcon: {
     padding: 10,
@@ -356,6 +392,12 @@ const styles = StyleSheet.create({
   closeStatsButtonText: {
     color: AppColors.white,
     fontSize: 16,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#120E29', // Fondo gris oscuro
   },
 });
 
