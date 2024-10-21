@@ -25,6 +25,7 @@ const PhotoStats = ({type}) => {
   const [data, setData] = useState([]);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [wasShown, setWasShown] = useState(false);
 
   useEffect(() => {
     fetchTopPhotos();
@@ -49,93 +50,92 @@ const PhotoStats = ({type}) => {
         };
       });
 
-      console.log(`Top photos for ${type}:`, topPhotos);
       setData(topPhotos);
     } catch (error) {
       console.error('Error fetching top photos:', error);
     }
   };
 
-  const handleSelectDataPoint = (event, datum) => {
-    console.log('Selected datum:', datum);
-    setLoading(true);
-    const selectedData = datum.datum || datum;
-    setSelectedPhoto(selectedData);
-    setLoading(false);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (data.length > 0 && !wasShown) {
+        handleSelectMostVoted();
+        setWasShown(true);
+      }
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [data, wasShown]);
+
+  const handleSelectMostVoted = () => {
+    if (data.length > 0) {
+      const mostVoted = data.reduce((prev, current) =>
+        prev.y > current.y ? prev : current,
+      );
+      setSelectedPhoto(mostVoted);
+      console.log(mostVoted);
+    }
   };
 
   const closeModal = () => {
     setSelectedPhoto(null);
   };
 
+  const Chart = type === 'linda' ? VictoryPie : VictoryBar;
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{`Top 5 Fotos ${
+      <Text style={styles.title}>{`5 Fotos ${
         type === 'linda' ? 'Lindas' : 'Feas'
-      }`}</Text>
-      {type === 'linda' ? (
-        <VictoryPie
-          data={data}
-          x="x"
-          y="y"
-          width={screenWidth}
-          height={300}
-          colorScale="qualitative"
-          labels={({datum}) => `${datum.x}: ${datum.y}`}
-          style={{
-            labels: {fill: 'white', fontSize: 12, fontWeight: 'bold'},
-          }}
-          events={[
-            {
-              target: 'data',
-              eventHandlers: {
-                onPress: handleSelectDataPoint,
-              },
-            },
-          ]}
-        />
-      ) : (
-        <VictoryChart
-          theme={VictoryTheme.material}
-          domainPadding={20}
-          width={screenWidth}
-          height={300}>
-          <VictoryAxis
-            tickFormat={x => x}
-            style={{
-              tickLabels: {fill: 'white', fontSize: 12},
-            }}
-          />
-          <VictoryAxis
-            dependentAxis
-            tickFormat={x => `${x}`}
-            style={{
-              tickLabels: {fill: 'white', fontSize: 12},
-            }}
-          />
-          <VictoryBar
+      } más votadas`}</Text>
+      <TouchableOpacity
+        onPress={handleSelectMostVoted}
+        style={styles.chartContainer}>
+        {type === 'linda' ? (
+          <VictoryPie
             data={data}
             x="x"
             y="y"
-            labels={({datum}) => `${datum.y}`}
+            width={screenWidth}
+            height={300}
+            colorScale="qualitative"
+            labels={({datum}) => `${datum.x}: ${datum.y}`}
             style={{
-              data: {fill: '#c43a31'},
-              labels: {fill: 'white'},
+              labels: {fill: 'white', fontSize: 12, fontWeight: 'bold'},
             }}
-            events={[
-              {
-                target: 'data',
-                eventHandlers: {
-                  onPress: (evt, targetProps) => {
-                    const {datum} = targetProps;
-                    handleSelectDataPoint(null, {datum});
-                  },
-                },
-              },
-            ]}
           />
-        </VictoryChart>
-      )}
+        ) : (
+          <VictoryChart
+            theme={VictoryTheme.material}
+            domainPadding={20}
+            width={screenWidth}
+            height={300}>
+            <VictoryAxis
+              tickFormat={x => x}
+              style={{
+                tickLabels: {fill: 'white', fontSize: 12},
+              }}
+            />
+            <VictoryAxis
+              dependentAxis
+              tickFormat={x => `${x}`}
+              style={{
+                tickLabels: {fill: 'white', fontSize: 12},
+              }}
+            />
+            <VictoryBar
+              data={data}
+              x="x"
+              y="y"
+              labels={({datum}) => `${datum.y}`}
+              style={{
+                data: {fill: '#c43a31'},
+                labels: {fill: 'white'},
+              }}
+            />
+          </VictoryChart>
+        )}
+      </TouchableOpacity>
       <Modal
         visible={selectedPhoto !== null}
         transparent={true}
@@ -146,7 +146,6 @@ const PhotoStats = ({type}) => {
               <ActivityIndicator size="large" color={AppColors.purple} />
             ) : selectedPhoto ? (
               <>
-                {console.log('Modal photo data:', selectedPhoto)}
                 {selectedPhoto.imageUrl ? (
                   <Image
                     source={{uri: selectedPhoto.imageUrl}}
@@ -193,6 +192,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: AppColors.white,
     marginBottom: 20,
+  },
+  chartContainer: {
+    width: screenWidth,
+    height: 300,
   },
   modalContainer: {
     flex: 1,
